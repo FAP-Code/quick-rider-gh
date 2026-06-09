@@ -7,7 +7,7 @@ export interface NotificationPayload {
   type: NotificationType;
   title: string;
   body: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, string>;
 }
 
 export async function createNotification(payload: NotificationPayload) {
