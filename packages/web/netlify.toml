@@ -1,9 +1,6 @@
 [build]
-  command = "npm run build"
-  publish = ".next"
+  command = "npm install && npm run build"
+  publish = "out"
 
 [build.environment]
-  NEXT_PUBLIC_API_URL = "/api/v1"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+  NEXT_PUBLIC_API_URL = "https://quick-rider-gh.onrender.com/api/v1"
