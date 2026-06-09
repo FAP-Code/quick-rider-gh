@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut,
   Bell,
+  ExternalLink,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useRouter } from 'next/navigation';
@@ -73,6 +74,19 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Portal Previews */}
+      <div className="border-t border-green-600/40 px-3 py-3 space-y-0.5">
+        <p className="text-green-500 text-xs font-semibold uppercase tracking-wider px-3 mb-1">Preview Portals</p>
+        <Link href="/customer" className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-green-200 hover:bg-white/10 hover:text-white text-sm transition-colors">
+          <span className="flex items-center gap-3"><Users size={18} strokeWidth={1.75} />Customer App</span>
+          <ExternalLink size={14} />
+        </Link>
+        <Link href="/rider" className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-green-200 hover:bg-white/10 hover:text-white text-sm transition-colors">
+          <span className="flex items-center gap-3"><Bike size={18} strokeWidth={1.75} />Rider App</span>
+          <ExternalLink size={14} />
+        </Link>
+      </div>
 
       {/* User */}
       <div className="border-t border-green-600/40 p-3 space-y-1">
