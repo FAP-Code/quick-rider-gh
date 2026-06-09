@@ -18,14 +18,14 @@ import { useAuthStore } from '@/lib/auth-store';
 import { useRouter } from 'next/navigation';
 
 const navItems = [
-  { href: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/orders',       label: 'Orders',       icon: ShoppingBag },
-  { href: '/riders',       label: 'Riders',       icon: Bike },
-  { href: '/customers',    label: 'Customers',    icon: Users },
-  { href: '/analytics',    label: 'Analytics',    icon: BarChart3 },
-  { href: '/withdrawals',  label: 'Withdrawals',  icon: CreditCard },
-  { href: '/reports',      label: 'Reports',      icon: AlertTriangle },
-  { href: '/settings',     label: 'Settings',     icon: Settings },
+  { href: '/dashboard',              label: 'Dashboard',    icon: LayoutDashboard },
+  { href: '/dashboard/orders',       label: 'Orders',       icon: ShoppingBag },
+  { href: '/dashboard/riders',       label: 'Riders',       icon: Bike },
+  { href: '/dashboard/customers',    label: 'Customers',    icon: Users },
+  { href: '/dashboard/analytics',    label: 'Analytics',    icon: BarChart3 },
+  { href: '/dashboard/withdrawals',  label: 'Withdrawals',  icon: CreditCard },
+  { href: '/dashboard/reports',      label: 'Reports',      icon: AlertTriangle },
+  { href: '/dashboard/settings',     label: 'Settings',     icon: Settings },
 ];
 
 export function Sidebar() {

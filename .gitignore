@@ -11,3 +11,6 @@ build/
 coverage/
 .turbo/
 prisma/migrations/dev.db
+
+# Local Netlify folder
+.netlify
