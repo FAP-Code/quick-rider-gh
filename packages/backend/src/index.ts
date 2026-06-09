@@ -26,7 +26,7 @@ app.use(cors({
     // Allow requests with no origin (same-origin proxy, curl, mobile apps)
     if (!origin) return callback(null, true);
     // Allow configured frontend + any ngrok tunnel
-    const allowed = [config.frontendUrl, /\.ngrok(-free)?\.(app|dev|io)$/, /\.ngrok\.io$/];
+    const allowed = [config.frontendUrl, /\.ngrok(-free)?\.(app|dev|io)$/, /\.ngrok\.io$/, /\.netlify\.app$/];
     const ok = allowed.some(p => typeof p === 'string' ? p === origin : p.test(origin));
     callback(ok ? null : new Error('CORS blocked'), ok);
   },
