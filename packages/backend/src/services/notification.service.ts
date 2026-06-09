@@ -1,5 +1,5 @@
 import { prisma } from '../config/prisma';
-import { NotificationType, Prisma } from '@prisma/client';
+import { NotificationType } from '@prisma/client';
 import { logger } from '../utils/logger';
 
 export interface NotificationPayload {
@@ -7,7 +7,7 @@ export interface NotificationPayload {
   type: NotificationType;
   title: string;
   body: string;
-  data?: Prisma.InputJsonObject;
+  data?: Record<string, unknown>;
 }
 
 export async function createNotification(payload: NotificationPayload) {
