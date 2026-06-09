@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: quick_rider_db
+    environment:
+      POSTGRES_DB: quick_rider_gh
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: quick_rider_redis
+    ports:
+      - '6379:6379'
+
+  backend:
+    build:
+      context: ./packages/backend
+      dockerfile: Dockerfile
+    container_name: quick_rider_api
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/quick_rider_gh
+      NODE_ENV: production
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min32chars}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh-min32chars}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/index.js"
+
+  web:
+    build:
+      context: ./packages/web
+      dockerfile: Dockerfile
+    container_name: quick_rider_web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+    ports:
+      - '3000:3000'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

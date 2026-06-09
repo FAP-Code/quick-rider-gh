@@ -1,0 +1,25 @@
+{
+  "name": "quick-rider-gh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Quick Rider GH - Motorcycle delivery & errand platform for Ghana",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter web dev\"",
+    "build": "pnpm --filter backend build && pnpm --filter web build",
+    "db:migrate": "pnpm --filter backend db:migrate",
+    "db:seed": "pnpm --filter backend db:seed",
+    "db:studio": "pnpm --filter backend db:studio",
+    "lint": "pnpm --filter '*' lint",
+    "test": "pnpm --filter '*' test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: quick-rider-gh-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build && npx prisma generate
+    startCommand: npx prisma migrate deploy && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      - key: FRONTEND_URL
+        sync: false
