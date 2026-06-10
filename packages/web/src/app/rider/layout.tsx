@@ -3,13 +3,19 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/auth-store';
-import { LayoutDashboard, Briefcase, DollarSign, User, LogOut, Bell } from 'lucide-react';
+import { LayoutDashboard, Briefcase, DollarSign, User, LogOut, Bell, Star, Settings, ShieldAlert } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 
 const NAV = [
-  { href: '/rider',          label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/rider/jobs',     label: 'My Jobs',   icon: Briefcase       },
-  { href: '/rider/earnings', label: 'Earnings',  icon: DollarSign      },
-  { href: '/rider/profile',  label: 'Profile',   icon: User            },
+  { href: '/rider',              label: 'Dashboard',     icon: LayoutDashboard },
+  { href: '/rider/jobs',         label: 'My Jobs',       icon: Briefcase       },
+  { href: '/rider/earnings',     label: 'Earnings',      icon: DollarSign      },
+  { href: '/rider/ratings',      label: 'Ratings',       icon: Star            },
+  { href: '/rider/notifications',label: 'Notifications', icon: Bell            },
+  { href: '/rider/profile',      label: 'Profile',       icon: User            },
+  { href: '/rider/settings',     label: 'Settings',      icon: Settings        },
+  { href: '/rider/sos',          label: 'SOS',           icon: ShieldAlert     },
 ];
 
 export default function RiderLayout({ children }: { children: React.ReactNode }) {
@@ -21,6 +27,14 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
     if (user?.role !== 'RIDER') { router.replace('/auth/login'); }
   }, [isAuthenticated, user, router]);
+
+  const { data: notifData } = useQuery<{ data: { unreadCount: number } }>({
+    queryKey: ['rider-unread-notifications'],
+    queryFn: () => api.get('/users/me/notifications?limit=1'),
+    enabled: isAuthenticated && user?.role === 'RIDER',
+    refetchInterval: 30_000,
+  });
+  const unreadCount = notifData?.data?.unreadCount ?? 0;
 
   if (!isAuthenticated || user?.role !== 'RIDER') return null;
 
@@ -75,9 +89,14 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
           <p className="font-semibold text-sm text-foreground">
             {NAV.find(n => n.href === pathname || (n.href !== '/rider' && pathname.startsWith(n.href)))?.label ?? 'Dashboard'}
           </p>
-          <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
+          <Link href="/rider/notifications" className="relative p-2 rounded-lg hover:bg-muted transition-colors">
             <Bell size={18} className="text-muted-foreground" />
-          </button>
+            {unreadCount > 0 && (
+              <span className="absolute top-0.5 right-0.5 w-4 h-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>

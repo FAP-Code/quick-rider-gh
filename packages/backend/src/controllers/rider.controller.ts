@@ -234,3 +234,50 @@ export async function getNearbyRiders(req: Request, res: Response): Promise<void
 
   sendSuccess(res, nearby);
 }
+
+// GET /riders/me/ratings
+export async function getMyRatings(req: Request, res: Response): Promise<void> {
+  const { page = '1', limit = '20' } = req.query;
+  const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+  const take = parseInt(limit as string);
+
+  const [ratings, total, agg] = await Promise.all([
+    prisma.rating.findMany({
+      where: { ratedId: req.user!.userId },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+      include: {
+        rater: { select: { id: true, firstName: true, lastName: true, profilePhotoUrl: true } },
+        order: { select: { id: true, orderNumber: true, type: true, destinationAddress: true } },
+      },
+    }),
+    prisma.rating.count({ where: { ratedId: req.user!.userId } }),
+    prisma.rating.aggregate({
+      where: { ratedId: req.user!.userId },
+      _avg: { score: true },
+      _count: { score: true },
+    }),
+  ]);
+
+  // Distribution of scores 1-5
+  const distribution = await prisma.rating.groupBy({
+    by: ['score'],
+    where: { ratedId: req.user!.userId },
+    _count: { score: true },
+  });
+  const breakdown: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  distribution.forEach((d) => { breakdown[d.score] = d._count.score; });
+
+  sendSuccess(res, {
+    ratings,
+    average: agg._avg.score || 0,
+    total: agg._count.score,
+    breakdown,
+  }, 'Ratings retrieved', 200, {
+    total,
+    page: parseInt(page as string),
+    limit: take,
+    totalPages: Math.ceil(total / take),
+  });
+}

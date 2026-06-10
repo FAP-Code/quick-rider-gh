@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
@@ -117,11 +118,13 @@ export default function RiderDashboard() {
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="flex items-center gap-2"><MapPin size={13} className="text-brand-green-500 flex-shrink-0" /><span className="text-muted-foreground truncate">{o.pickupAddress}</span></div>
-                  <div className="flex items-center gap-2"><Navigation size={13} className="text-red-500 flex-shrink-0" /><span className="text-muted-foreground truncate">{o.dropoffAddress}</span></div>
+                  <div className="flex items-center gap-2"><Navigation size={13} className="text-red-500 flex-shrink-0" /><span className="text-muted-foreground truncate">{o.destinationAddress}</span></div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm">{formatCurrency(o.fare)}</span>
+                  <span className="font-bold text-sm">{formatCurrency(o.totalAmount)}</span>
                   <div className="flex gap-2">
+                    <Link href={`/rider/jobs/details?id=${o.id}`}
+                      className="px-3 py-1.5 border text-xs rounded-lg font-semibold hover:bg-muted transition-colors">Details</Link>
                     {o.status === 'PENDING' && (
                       <button onClick={() => acceptMutation.mutate(o.id)} disabled={acceptMutation.isPending}
                         className="px-3 py-1.5 bg-brand-green-500 text-white text-xs rounded-lg font-semibold hover:bg-brand-green-600 disabled:opacity-60 transition-colors">

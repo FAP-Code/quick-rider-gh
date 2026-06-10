@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -75,20 +76,22 @@ export default function RiderJobsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-mono text-muted-foreground">#{o.orderNumber?.slice(-8)}</p>
-                    <p className="font-semibold text-sm mt-0.5">{o.serviceType}</p>
+                    <p className="font-semibold text-sm mt-0.5">{o.type}</p>
                   </div>
                   <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${STATUS_COLORS[o.status] ?? 'bg-gray-100 text-gray-600'}`}>{o.status}</span>
                 </div>
                 <div className="space-y-1.5 text-sm">
                   <div className="flex items-start gap-2"><MapPin size={13} className="text-brand-green-500 mt-0.5 flex-shrink-0" /><span className="text-muted-foreground">{o.pickupAddress}</span></div>
-                  <div className="flex items-start gap-2"><Navigation size={13} className="text-red-500 mt-0.5 flex-shrink-0" /><span className="text-muted-foreground">{o.dropoffAddress}</span></div>
+                  <div className="flex items-start gap-2"><Navigation size={13} className="text-red-500 mt-0.5 flex-shrink-0" /><span className="text-muted-foreground">{o.destinationAddress}</span></div>
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t">
                   <div>
-                    <span className="font-bold text-sm">{formatCurrency(o.fare)}</span>
+                    <span className="font-bold text-sm">{formatCurrency(o.totalAmount)}</span>
                     <span className="text-xs text-muted-foreground ml-2 flex items-center gap-1 inline-flex"><Clock size={11} />{formatDate(o.createdAt)}</span>
                   </div>
                   <div className="flex gap-2">
+                    <Link href={`/rider/jobs/details?id=${o.id}`}
+                      className="px-3 py-1.5 border text-xs rounded-lg font-semibold hover:bg-muted transition-colors">Details</Link>
                     {o.status === 'PENDING' && (
                       <button onClick={() => acceptMutation.mutate(o.id)} disabled={acceptMutation.isPending}
                         className="px-3 py-1.5 bg-brand-green-500 text-white text-xs rounded-lg font-semibold hover:bg-brand-green-600 disabled:opacity-60 transition-colors">Accept</button>

@@ -17,6 +17,7 @@ router.patch('/me/availability', requireRider, rider.setAvailability);
 router.patch('/me/location', requireRider, rider.updateLocation);
 router.patch('/me/motorcycle', requireRider, rider.updateMotorcycleDetails);
 router.get('/me/earnings', requireRider, rider.getEarnings);
+router.get('/me/ratings', requireRider, rider.getMyRatings);
 router.post('/me/withdraw', requireRider, rider.requestWithdrawal);
 router.post(
   '/me/documents',
