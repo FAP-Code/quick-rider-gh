@@ -1,19 +1,12 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, ORDER_STATUS_COLORS } from '@/lib/utils';
 import { Package, MapPin, Navigation, Clock, Star } from 'lucide-react';
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING:   'bg-yellow-100 text-yellow-700',
-  ACCEPTED:  'bg-blue-100 text-blue-700',
-  PICKED_UP: 'bg-indigo-100 text-indigo-700',
-  DELIVERED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-700',
-};
-
-const FILTERS = ['ALL', 'PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED', 'CANCELLED'];
+const FILTERS = ['ALL', 'PENDING', 'ACCEPTED', 'RIDER_EN_ROUTE', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED', 'CANCELLED'];
 
 export default function CustomerOrdersPage() {
   const [filter, setFilter] = useState('ALL');
@@ -59,13 +52,13 @@ export default function CustomerOrdersPage() {
             </div>
           )
           : data?.data?.map((o: any) => (
-              <div key={o.id} className="bg-card rounded-2xl border shadow-sm p-4 space-y-3">
+              <Link key={o.id} href={`/customer/track?id=${o.id}`} className="block bg-card rounded-2xl border shadow-sm p-4 space-y-3 hover:border-brand-green-300 transition-colors">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground font-mono">#{o.orderNumber}</p>
-                    <p className="font-semibold text-sm mt-0.5">{o.serviceType}</p>
+                    <p className="text-xs text-muted-foreground font-mono">#{o.orderNumber?.slice(-8)}</p>
+                    <p className="font-semibold text-sm mt-0.5">{o.type?.replace(/_/g, ' ')}</p>
                   </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${STATUS_COLORS[o.status] ?? 'bg-gray-100 text-gray-600'}`}>{o.status}</span>
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${ORDER_STATUS_COLORS[o.status] ?? 'bg-gray-100 text-gray-600'}`}>{o.status?.replace(/_/g, ' ')}</span>
                 </div>
 
                 <div className="space-y-1.5 text-sm">
@@ -75,7 +68,7 @@ export default function CustomerOrdersPage() {
                   </div>
                   <div className="flex items-start gap-2">
                     <Navigation size={14} className="text-red-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">{o.dropoffAddress}</span>
+                    <span className="text-muted-foreground">{o.destinationAddress}</span>
                   </div>
                 </div>
 
@@ -86,9 +79,9 @@ export default function CustomerOrdersPage() {
                       {o.rider.user?.firstName} {o.rider.user?.lastName}
                     </span>
                   )}
-                  <span className="font-bold text-foreground text-sm">{formatCurrency(o.fare)}</span>
+                  <span className="font-bold text-foreground text-sm">{formatCurrency(o.totalAmount)}</span>
                 </div>
-              </div>
+              </Link>
             ))}
       </div>
 

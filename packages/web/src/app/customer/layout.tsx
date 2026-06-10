@@ -2,20 +2,34 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
-import { Home, Package, Wallet, User, LogOut, Bell } from 'lucide-react';
+import { Home, Package, Wallet, User, LogOut, Bell, PlusCircle, MapPin, Bike, Settings } from 'lucide-react';
 
 const NAV = [
-  { href: '/customer',         label: 'Home',    icon: Home    },
-  { href: '/customer/orders',  label: 'Orders',  icon: Package },
-  { href: '/customer/wallet',  label: 'Wallet',  icon: Wallet  },
-  { href: '/customer/profile', label: 'Profile', icon: User    },
+  { href: '/customer',          label: 'Home',      icon: Home       },
+  { href: '/customer/request',  label: 'Request',   icon: PlusCircle },
+  { href: '/customer/orders',   label: 'Orders',    icon: Package    },
+  { href: '/customer/riders',   label: 'Riders',    icon: Bike       },
+  { href: '/customer/addresses',label: 'Addresses', icon: MapPin     },
+  { href: '/customer/wallet',   label: 'Payments',  icon: Wallet     },
+  { href: '/customer/profile',  label: 'Profile',   icon: User       },
+  { href: '/customer/settings', label: 'Settings',  icon: Settings   },
 ];
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, clearAuth } = useAuthStore();
+
+  const { data: notifData } = useQuery<{ data: { unreadCount: number } }>({
+    queryKey: ['customer-unread-notifications'],
+    queryFn: () => api.get('/users/me/notifications?limit=1'),
+    enabled: isAuthenticated && user?.role === 'CUSTOMER',
+    refetchInterval: 30_000,
+  });
+  const unreadCount = notifData?.data?.unreadCount ?? 0;
 
   useEffect(() => {
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
@@ -73,11 +87,16 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-14 bg-card border-b flex items-center justify-between px-6 flex-shrink-0">
           <p className="font-semibold text-sm text-foreground">
-            {NAV.find(n => n.href === pathname || (n.href !== '/customer' && pathname.startsWith(n.href)))?.label ?? 'Home'}
+            {pathname.startsWith('/customer/notifications')
+              ? 'Notifications'
+              : NAV.find(n => n.href === pathname || (n.href !== '/customer' && pathname.startsWith(n.href)))?.label ?? 'Home'}
           </p>
-          <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
+          <Link href="/customer/notifications" className="relative p-2 rounded-lg hover:bg-muted transition-colors">
             <Bell size={18} className="text-muted-foreground" />
-          </button>
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
+            )}
+          </Link>
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
