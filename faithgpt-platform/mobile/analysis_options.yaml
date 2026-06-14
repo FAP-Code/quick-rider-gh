@@ -1,0 +1,14 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.gr.dart"
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_single_quotes: true
+    sort_child_properties_last: true
+    require_trailing_commas: true

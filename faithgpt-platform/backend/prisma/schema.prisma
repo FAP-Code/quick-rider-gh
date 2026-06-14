@@ -1,0 +1,1168 @@
+// =====================================================================================
+// FaithGPT™ — Core Database Schema (Prisma)
+// Database: PostgreSQL 16+
+// Generated as part of /faithgpt-platform design deliverables.
+// See /faithgpt-platform/docs/05-database-schema.md for ERD & rationale.
+// =====================================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================================================
+// ENUMS
+// =====================================================================================
+
+enum UserRole {
+  USER
+  GROUP_LEADER
+  MINISTRY_ADMIN
+  MODERATOR
+  CONTENT_EDITOR
+  SUPPORT
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum SubscriptionTier {
+  FREE
+  PLUS
+  PREMIUM
+  MINISTRY
+  LIFETIME
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  EXPIRED
+  PAUSED
+}
+
+enum BillingProvider {
+  STRIPE
+  APPLE_IAP
+  GOOGLE_PLAY
+  PAYSTACK
+  MANUAL
+}
+
+enum AuthProviderType {
+  PASSWORD
+  GOOGLE
+  APPLE
+  FACEBOOK
+  PHONE_OTP
+}
+
+enum Testament {
+  OLD
+  NEW
+}
+
+enum DevotionType {
+  PERSONAL
+  FAMILY
+  YOUTH
+  CHILDREN
+  PATHFINDER
+  WOMEN
+  MEN
+  LEADERSHIP
+  MARRIAGE
+  EVANGELISTIC
+  SABBATH_SCHOOL
+  SMALL_GROUP
+  SERMON_PREP
+}
+
+enum DevotionDepth {
+  QUICK
+  STANDARD
+  DEEP
+  ADVANCED
+  TEACHING
+  SERMON
+}
+
+enum BiblicalElementType {
+  COMMAND
+  PROMISE
+  WARNING
+  BLESSING
+  PROPHECY
+  FULFILLMENT
+  CHARACTER_LESSON
+  LIFE_APPLICATION
+  SPIRITUAL_PRINCIPLE
+}
+
+enum PrayerType {
+  PERSONAL
+  FAMILY
+  HEALING
+  INTERCESSORY
+  GRATITUDE
+  LEADERSHIP
+  MARRIAGE
+  GUIDANCE
+  STRENGTH
+}
+
+enum AIQuestionCategory {
+  MEANING
+  SIMPLE_EXPLANATION
+  CHILDRENS_EXPLANATION
+  HISTORICAL_BACKGROUND
+  CULTURAL_CONTEXT
+  MODERN_APPLICATION
+  HEBREW_ORIGINAL
+  GREEK_ORIGINAL
+  CROSS_REFERENCES
+  CHARACTER_PARALLELS
+  CHRIST_CONNECTION
+  GENERAL
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum ImageStyle {
+  PHOTOREALISTIC
+  CINEMATIC
+  CHRISTIAN_ARTWORK
+  CARTOON
+  CHILDRENS_STORYBOOK
+  COMIC_BOOK
+  WATERCOLOR
+  OIL_PAINTING
+  MINIMALIST_POSTER
+  SOCIAL_MEDIA_GRAPHIC
+}
+
+enum ImageSourceType {
+  VERSE
+  CHAPTER
+  BIBLE_STORY
+  DEVOTION
+  PRAYER
+  SERMON
+  MEMORY_VERSE
+  CUSTOM_PROMPT
+}
+
+enum GenerationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  MODERATION_BLOCKED
+}
+
+enum MemoryCardFormat {
+  FLASHCARD
+  WALLPAPER
+  LOCK_SCREEN
+  CHILDRENS_CARD
+  PRINTABLE
+}
+
+enum JournalEntryType {
+  NOTE
+  DEVOTION
+  PRAYER
+  TESTIMONY
+  INSIGHT
+  ANSWERED_PRAYER
+}
+
+enum PrayerRequestVisibility {
+  PRIVATE
+  GROUP
+  PUBLIC
+}
+
+enum StreakType {
+  READING
+  PRAYER
+  DEVOTION
+}
+
+enum GroupRole {
+  MEMBER
+  LEADER
+}
+
+enum CommunityPostType {
+  DEVOTION_SHARE
+  TESTIMONY
+  PRAYER_REQUEST
+  INSIGHT
+  IMAGE_SHARE
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum NotificationType {
+  DAILY_DEVOTION
+  STREAK_REMINDER
+  PRAYER_ANSWERED
+  GROUP_ACTIVITY
+  COMMUNITY_INTERACTION
+  SUBSCRIPTION
+  SYSTEM
+}
+
+enum AIFeature {
+  DEVOTION
+  BIBLE_STUDY
+  PRAYER
+  SERMON
+  SCRIPTURE_ANALYSIS
+  IMAGE_GENERATION
+  STORY_VISUALIZER
+  CONTENT_CREATOR
+}
+
+enum CrossReferenceType {
+  PARALLEL
+  PROPHECY_FULFILLMENT
+  THEME
+  QUOTATION
+  TYPOLOGY
+}
+
+// =====================================================================================
+// USERS, AUTH, ORGANIZATIONS
+// =====================================================================================
+
+model User {
+  id                String   @id @default(cuid())
+  email             String?  @unique
+  phone             String?  @unique
+  passwordHash      String?
+  name              String
+  avatarUrl         String?
+  role              UserRole @default(USER)
+  denominationLens  String?  // e.g. "SDA", "CATHOLIC", "BAPTIST", "NEUTRAL"
+  locale            String   @default("en")
+  timezone          String   @default("UTC")
+  defaultBibleVersionId String?
+  emailVerifiedAt   Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  lastActiveAt      DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  authProviders     AuthAccount[]
+  refreshTokens     RefreshToken[]
+  subscription      Subscription?
+  organizationMemberships OrganizationMember[]
+
+  highlights        Highlight[]
+  notes             Note[]
+  bookmarks         Bookmark[]
+  verseHistory      VerseHistory[]
+  readingProgress   UserReadingPlan[]
+
+  devotions         Devotion[]
+  prayers           Prayer[]
+  sermons           Sermon[]
+  aiConversations   AIConversation[]
+  imageGenerations  ImageGeneration[]
+  storyVisualizations BibleStoryVisualization[]
+  memoryCards       MemoryVerseCard[]
+  journalEntries    JournalEntry[]
+  prayerRequests    PrayerRequest[]
+
+  streaks           UserStreak[]
+  spiritualStat     SpiritualStat?
+  achievements      UserAchievement[]
+
+  ownedGroups       Group[]            @relation("GroupOwner")
+  groupMemberships  GroupMembership[]
+  communityPosts    CommunityPost[]
+  postComments      PostComment[]
+  postLikes         PostLike[]
+  followers         Follow[]           @relation("Following")
+  following         Follow[]           @relation("Follower")
+
+  notifications     Notification[]
+  aiUsageLogs       AIUsageLog[]
+
+  @@map("users")
+}
+
+model AuthAccount {
+  id          String           @id @default(cuid())
+  userId      String
+  provider    AuthProviderType
+  providerId  String           // external provider user id, or null for PASSWORD
+  createdAt   DateTime         @default(now())
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@map("auth_accounts")
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  deviceInfo  String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("CHURCH") // CHURCH, SCHOOL, MINISTRY
+  seatLimit   Int      @default(5)
+  billingEmail String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     OrganizationMember[]
+  subscription Subscription?
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id              String       @id @default(cuid())
+  organizationId  String
+  userId          String
+  roleInOrg       String       @default("STAFF") // ADMIN, STAFF
+  joinedAt        DateTime     @default(now())
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+// =====================================================================================
+// SUBSCRIPTIONS & BILLING
+// =====================================================================================
+
+model Subscription {
+  id                    String             @id @default(cuid())
+  userId                String?            @unique
+  organizationId        String?            @unique
+  tier                  SubscriptionTier   @default(FREE)
+  status                SubscriptionStatus @default(ACTIVE)
+  provider              BillingProvider    @default(MANUAL)
+  providerCustomerId    String?
+  providerSubscriptionId String?
+  seats                 Int                @default(1)
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean            @default(false)
+  trialEndsAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  user          User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization  Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoices      Invoice[]
+
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  subscriptionId  String
+  amountCents     Int
+  currency        String   @default("USD")
+  status          String   // paid, open, void, uncollectible
+  providerInvoiceId String?
+  issuedAt        DateTime @default(now())
+
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@map("invoices")
+}
+
+// =====================================================================================
+// BIBLE CONTENT
+// =====================================================================================
+
+model BibleVersion {
+  id              String   @id @default(cuid())
+  code            String   @unique // KJV, NIV, ESV, WEB, NLT...
+  name            String
+  language        String   @default("en")
+  license         String   // PUBLIC_DOMAIN, LICENSED
+  isOfflineBundled Boolean @default(false)
+  publisher       String?
+  createdAt       DateTime @default(now())
+
+  texts           VerseText[]
+
+  @@map("bible_versions")
+}
+
+model BibleBook {
+  id          String    @id @default(cuid())
+  name        String    @unique // "Genesis", "Romans"...
+  abbreviation String
+  testament   Testament
+  orderIndex  Int       @unique // 1-66 canonical order
+  chapterCount Int
+
+  verses      BibleVerse[]
+  readingPlanPassages ReadingPlanPassage[]
+
+  @@map("bible_books")
+}
+
+// Canonical verse identity (translation-independent)
+model BibleVerse {
+  id        String   @id @default(cuid())
+  bookId    String
+  chapter   Int
+  verse     Int
+
+  book      BibleBook   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  texts     VerseText[]
+  highlights Highlight[]
+  notes      Note[]
+  bookmarks  Bookmark[]
+  history    VerseHistory[]
+  memoryCards MemoryVerseCard[]
+  themeLinks ScriptureThemeTag[]
+  elementLinks ScriptureElementTag[]
+
+  crossRefsFrom CrossReference[] @relation("FromVerse")
+  crossRefsTo   CrossReference[] @relation("ToVerse")
+
+  @@unique([bookId, chapter, verse])
+  @@index([bookId, chapter])
+  @@map("bible_verses")
+}
+
+// Per-translation verse text
+model VerseText {
+  id         String   @id @default(cuid())
+  verseId    String
+  versionId  String
+  text       String
+
+  verse      BibleVerse   @relation(fields: [verseId], references: [id], onDelete: Cascade)
+  version    BibleVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([verseId, versionId])
+  @@index([versionId])
+  @@map("verse_texts")
+}
+
+// =====================================================================================
+// READING PLANS & PROGRESS
+// =====================================================================================
+
+model ReadingPlan {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  durationDays  Int
+  category      String   // e.g. "New Testament in 30 Days", "Topical: Anxiety"
+  isPremium     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  days          ReadingPlanDay[]
+  userPlans     UserReadingPlan[]
+
+  @@map("reading_plans")
+}
+
+model ReadingPlanDay {
+  id          String   @id @default(cuid())
+  planId      String
+  dayNumber   Int
+  title       String?
+  devotionalNote String?
+
+  plan        ReadingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  passages    ReadingPlanPassage[]
+
+  @@unique([planId, dayNumber])
+  @@map("reading_plan_days")
+}
+
+model ReadingPlanPassage {
+  id            String   @id @default(cuid())
+  dayId         String
+  bookId        String
+  chapterStart  Int
+  verseStart    Int?
+  chapterEnd    Int
+  verseEnd      Int?
+
+  day           ReadingPlanDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  book          BibleBook      @relation(fields: [bookId], references: [id])
+
+  @@map("reading_plan_passages")
+}
+
+model UserReadingPlan {
+  id           String    @id @default(cuid())
+  userId       String
+  planId       String
+  startedAt    DateTime  @default(now())
+  currentDay   Int       @default(1)
+  completedAt  DateTime?
+
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan         ReadingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, planId])
+  @@map("user_reading_plans")
+}
+
+// =====================================================================================
+// USER BIBLE INTERACTIONS
+// =====================================================================================
+
+model Highlight {
+  id        String   @id @default(cuid())
+  userId    String
+  verseId   String
+  color     String   @default("yellow")
+  createdAt DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verse     BibleVerse @relation(fields: [verseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, verseId])
+  @@map("highlights")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  verseId   String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verse     BibleVerse @relation(fields: [verseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notes")
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  verseId   String
+  createdAt DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verse     BibleVerse @relation(fields: [verseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, verseId])
+  @@map("bookmarks")
+}
+
+model VerseHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  verseId   String
+  viewedAt  DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verse     BibleVerse @relation(fields: [verseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, viewedAt])
+  @@map("verse_history")
+}
+
+// =====================================================================================
+// THEMES & SCRIPTURE ANALYSIS ENGINE
+// =====================================================================================
+
+model Theme {
+  id          String   @id @default(cuid())
+  slug        String   @unique // "faith", "hope", "love"...
+  name        String
+  description String?
+
+  scriptureLinks ScriptureThemeTag[]
+  devotionLinks  DevotionTheme[]
+
+  @@map("themes")
+}
+
+// Cached AI theme detection per verse (many-to-many with relevance score)
+model ScriptureThemeTag {
+  id        String  @id @default(cuid())
+  verseId   String
+  themeId   String
+  relevance Float   @default(1.0)
+
+  verse     BibleVerse @relation(fields: [verseId], references: [id], onDelete: Cascade)
+  theme     Theme      @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([verseId, themeId])
+  @@map("scripture_theme_tags")
+}
+
+model ScriptureElementTag {
+  id        String              @id @default(cuid())
+  verseId   String
+  type      BiblicalElementType
+  note      String?
+
+  verse     BibleVerse @relation(fields: [verseId], references: [id], onDelete: Cascade)
+
+  @@index([verseId])
+  @@map("scripture_element_tags")
+}
+
+// Cached full Scripture Analysis Engine output for a passage+version (avoids re-generation)
+model ScriptureAnalysisCache {
+  id            String   @id @default(cuid())
+  passageKey    String   @unique // normalized e.g. "ROM.8.28-39"
+  versionCode   String
+  themes        Json     // [{slug, name, relevance}]
+  elements      Json     // [{type, note}]
+  suggestedThemes Json   // theme discovery suggestions (titles)
+  rawModelOutput Json?
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime?
+
+  @@map("scripture_analysis_cache")
+}
+
+// =====================================================================================
+// AI VERSE-TO-DEVOTION ENGINE
+// =====================================================================================
+
+model Devotion {
+  id              String        @id @default(cuid())
+  userId          String
+  title           String
+  passageKey      String        // normalized reference e.g. "ROM.8.28-39"
+  bookId          String?
+  chapterStart    Int?
+  verseStart      Int?
+  chapterEnd      Int?
+  verseEnd        Int?
+  versionCode     String        @default("ESV")
+  type            DevotionType
+  depth           DevotionDepth
+  sections        Json          // canonical 15-section object, see §00 shared reference
+  memoryVerseRef  String?
+  aiModel         String
+  generationParams Json?
+  isFavorite      Boolean       @default(false)
+  isShared        Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  themes          DevotionTheme[]
+  imageGenerations ImageGeneration[]
+  journalEntries  JournalEntry[]
+  communityPosts  CommunityPost[]
+
+  @@index([userId, createdAt])
+  @@map("devotions")
+}
+
+model DevotionTheme {
+  id          String @id @default(cuid())
+  devotionId  String
+  themeId     String
+
+  devotion    Devotion @relation(fields: [devotionId], references: [id], onDelete: Cascade)
+  theme       Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([devotionId, themeId])
+  @@map("devotion_themes")
+}
+
+// Admin-managed prompt templates per type/depth combination
+model DevotionTemplate {
+  id              String        @id @default(cuid())
+  type            DevotionType
+  depth           DevotionDepth
+  name            String
+  description     String?
+  systemPrompt    String
+  outputSchema    Json
+  isActive        Boolean       @default(true)
+  version         Int           @default(1)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([type, depth, version])
+  @@map("devotion_templates")
+}
+
+// =====================================================================================
+// AI PRAYER GENERATOR
+// =====================================================================================
+
+model Prayer {
+  id            String     @id @default(cuid())
+  userId        String
+  type          PrayerType
+  passageKey    String?
+  content       String
+  isFavorite    Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  journalEntries JournalEntry[]
+  imageGenerations ImageGeneration[]
+
+  @@index([userId, createdAt])
+  @@map("prayers")
+}
+
+// =====================================================================================
+// AI SERMON / TEACHING STUDIO
+// =====================================================================================
+
+model Sermon {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  passageKey  String
+  audience    String?  // "Youth", "Children", "Sabbath School", "General"
+  outline     Json     // {title, introduction, mainPoints[], illustrations[], application, altarCall, ...}
+  aiModel     String
+  createdAt   DateTime @default(now())
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imageGenerations ImageGeneration[]
+
+  @@index([userId, createdAt])
+  @@map("sermons")
+}
+
+// =====================================================================================
+// AI BIBLE STUDY ASSISTANT (Conversational)
+// =====================================================================================
+
+model AIConversation {
+  id              String   @id @default(cuid())
+  userId          String
+  title           String?
+  contextPassageKey String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages        AIMessage[]
+
+  @@index([userId, updatedAt])
+  @@map("ai_conversations")
+}
+
+model AIMessage {
+  id              String              @id @default(cuid())
+  conversationId  String
+  role            MessageRole
+  category        AIQuestionCategory?
+  content         String
+  citations       Json?               // [{ref: "John 3:16", versionCode: "ESV"}]
+  createdAt       DateTime            @default(now())
+
+  conversation    AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("ai_messages")
+}
+
+// =====================================================================================
+// AI SCRIPTURE IMAGE GENERATOR & VISUAL STUDIO
+// =====================================================================================
+
+model ImageGeneration {
+  id              String            @id @default(cuid())
+  userId          String
+  sourceType      ImageSourceType
+  sourceKey       String            // passageKey, devotionId, prayerId, sermonId, storyKey, or custom prompt hash
+  devotionId      String?
+  prayerId        String?
+  sermonId        String?
+  style           ImageStyle
+  userPrompt      String?
+  refinedPrompt   String            // final prompt sent to image model
+  modelName       String
+  status          GenerationStatus  @default(PENDING)
+  resultUrl       String?
+  thumbnailUrl    String?
+  isWatermarked   Boolean           @default(true)
+  moderationStatus ModerationStatus @default(PENDING)
+  moderationNote  String?
+  createdAt       DateTime          @default(now())
+  completedAt     DateTime?
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  devotion        Devotion? @relation(fields: [devotionId], references: [id], onDelete: SetNull)
+  prayer          Prayer?   @relation(fields: [prayerId], references: [id], onDelete: SetNull)
+  sermon          Sermon?   @relation(fields: [sermonId], references: [id], onDelete: SetNull)
+  memoryCards     MemoryVerseCard[]
+  storyboardFrames StoryboardFrame[]
+  communityPosts  CommunityPost[]
+
+  @@index([userId, createdAt])
+  @@index([moderationStatus])
+  @@map("image_generations")
+}
+
+// AI Bible Story Visualizer
+model BibleStoryVisualization {
+  id          String   @id @default(cuid())
+  userId      String
+  storyKey    String   // e.g. "noahs-ark", "david-and-goliath"
+  style       ImageStyle
+  outputType  String   // STORYBOARD, COMIC, STORYBOOK, TEACHING_SLIDES
+  createdAt   DateTime @default(now())
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  frames      StoryboardFrame[]
+
+  @@index([userId, createdAt])
+  @@map("bible_story_visualizations")
+}
+
+model StoryboardFrame {
+  id              String   @id @default(cuid())
+  visualizationId String
+  sequence        Int
+  caption         String
+  imageGenerationId String?
+
+  visualization   BibleStoryVisualization @relation(fields: [visualizationId], references: [id], onDelete: Cascade)
+  imageGeneration ImageGeneration?        @relation(fields: [imageGenerationId], references: [id], onDelete: SetNull)
+
+  @@unique([visualizationId, sequence])
+  @@map("storyboard_frames")
+}
+
+// Memory Verse Visualizer
+model MemoryVerseCard {
+  id              String            @id @default(cuid())
+  userId          String
+  verseId         String
+  format          MemoryCardFormat
+  imageGenerationId String?
+  createdAt       DateTime          @default(now())
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verse           BibleVerse       @relation(fields: [verseId], references: [id], onDelete: Cascade)
+  imageGeneration ImageGeneration? @relation(fields: [imageGenerationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("memory_verse_cards")
+}
+
+// =====================================================================================
+// SPIRITUAL JOURNAL
+// =====================================================================================
+
+model JournalEntry {
+  id              String           @id @default(cuid())
+  userId          String
+  type            JournalEntryType
+  title           String?
+  content         String
+  tags            String[]         @default([])
+  relatedDevotionId String?
+  relatedPrayerId   String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  relatedDevotion Devotion? @relation(fields: [relatedDevotionId], references: [id], onDelete: SetNull)
+  relatedPrayer   Prayer?   @relation(fields: [relatedPrayerId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("journal_entries")
+}
+
+model PrayerRequest {
+  id            String                  @id @default(cuid())
+  userId        String
+  content       String
+  isAnonymous   Boolean                 @default(false)
+  isAnswered    Boolean                 @default(false)
+  answeredNote  String?
+  answeredAt    DateTime?
+  visibility    PrayerRequestVisibility @default(PRIVATE)
+  groupId       String?
+  createdAt     DateTime                @default(now())
+
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group         Group?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("prayer_requests")
+}
+
+// =====================================================================================
+// SPIRITUAL GROWTH DASHBOARD
+// =====================================================================================
+
+model UserStreak {
+  id              String     @id @default(cuid())
+  userId          String
+  type            StreakType
+  currentStreak   Int        @default(0)
+  longestStreak   Int        @default(0)
+  lastActivityDate DateTime?
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("user_streaks")
+}
+
+model SpiritualStat {
+  userId              String   @id
+  totalChaptersRead   Int      @default(0)
+  totalBooksCompleted Int      @default(0)
+  totalDevotions      Int      @default(0)
+  totalMemoryVerses   Int      @default(0)
+  totalPrayerMinutes  Int      @default(0)
+  totalStudyMinutes   Int      @default(0)
+  updatedAt           DateTime @updatedAt
+
+  user                User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("spiritual_stats")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String
+  iconUrl     String?
+  criteria    Json     // e.g. {"type": "READING_STREAK", "threshold": 30}
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime @default(now())
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// =====================================================================================
+// COMMUNITY
+// =====================================================================================
+
+model Group {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  ownerId       String
+  isPrivate     Boolean  @default(false)
+  organizationId String?
+  createdAt     DateTime @default(now())
+
+  owner         User               @relation("GroupOwner", fields: [ownerId], references: [id])
+  members       GroupMembership[]
+  posts         CommunityPost[]
+  prayerRequests PrayerRequest[]
+
+  @@map("groups")
+}
+
+model GroupMembership {
+  id        String    @id @default(cuid())
+  groupId   String
+  userId    String
+  role      GroupRole @default(MEMBER)
+  joinedAt  DateTime  @default(now())
+
+  group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_memberships")
+}
+
+model CommunityPost {
+  id                String            @id @default(cuid())
+  userId            String
+  groupId           String?
+  type              CommunityPostType
+  content           String
+  relatedDevotionId String?
+  relatedImageId    String?
+  moderationStatus  ModerationStatus  @default(APPROVED)
+  createdAt         DateTime          @default(now())
+
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group             Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  relatedDevotion   Devotion?         @relation(fields: [relatedDevotionId], references: [id], onDelete: SetNull)
+  relatedImage      ImageGeneration?  @relation(fields: [relatedImageId], references: [id], onDelete: SetNull)
+  comments          PostComment[]
+  likes             PostLike[]
+  moderationFlags   ContentModerationFlag[]
+
+  @@index([groupId, createdAt])
+  @@index([moderationStatus])
+  @@map("community_posts")
+}
+
+model PostComment {
+  id              String           @id @default(cuid())
+  postId          String
+  userId          String
+  content         String
+  moderationStatus ModerationStatus @default(APPROVED)
+  createdAt       DateTime         @default(now())
+
+  post            CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("post_comments")
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("post_likes")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+// =====================================================================================
+// NOTIFICATIONS
+// =====================================================================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
+
+// =====================================================================================
+// AI USAGE, COST TRACKING & MODERATION (Admin)
+// =====================================================================================
+
+model AIUsageLog {
+  id              String    @id @default(cuid())
+  userId          String?
+  feature         AIFeature
+  modelName       String
+  promptTokens    Int       @default(0)
+  completionTokens Int      @default(0)
+  costUsdMicros   Int       @default(0) // cost stored as micro-dollars to avoid floats
+  latencyMs       Int
+  status          GenerationStatus
+  createdAt       DateTime  @default(now())
+
+  user            User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([feature, createdAt])
+  @@index([userId, createdAt])
+  @@map("ai_usage_logs")
+}
+
+model ContentModerationFlag {
+  id              String            @id @default(cuid())
+  targetType      String            // "COMMUNITY_POST", "POST_COMMENT", "IMAGE_GENERATION"
+  postId          String?
+  reason          String
+  reportedByUserId String?
+  status          ModerationStatus  @default(PENDING)
+  reviewedByAdminId String?
+  reviewedAt      DateTime?
+  createdAt       DateTime          @default(now())
+
+  post            CommunityPost? @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("content_moderation_flags")
+}
+
+// =====================================================================================
+// CROSS-REFERENCE ENGINE
+// =====================================================================================
+
+model CrossReference {
+  id        String              @id @default(cuid())
+  fromVerseId String
+  toVerseId   String
+  type      CrossReferenceType
+  note      String?
+
+  fromVerse BibleVerse @relation("FromVerse", fields: [fromVerseId], references: [id], onDelete: Cascade)
+  toVerse   BibleVerse @relation("ToVerse", fields: [toVerseId], references: [id], onDelete: Cascade)
+
+  @@unique([fromVerseId, toVerseId, type])
+  @@index([fromVerseId])
+  @@map("cross_references")
+}

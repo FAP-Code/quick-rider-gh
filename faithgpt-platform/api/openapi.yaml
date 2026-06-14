@@ -1,0 +1,2968 @@
+openapi: 3.0.3
+info:
+  title: FaithGPT API
+  version: "1.0.0"
+  description: >
+    Canonical REST API contract for FaithGPT™ ("Transforming Scripture into Daily Living").
+    Conventions, envelopes, pagination, streaming, and rate-limiting are documented narratively
+    in /faithgpt-platform/docs/09-api-architecture.md — this document is the reviewable
+    machine-readable snapshot. Schema names mirror /faithgpt-platform/schema/schema.prisma
+    verbatim (see /faithgpt-platform/docs/00-shared-reference.md §13).
+  contact:
+    name: FaithGPT Engineering
+    url: https://faithgpt.app
+
+servers:
+  - url: https://api.faithgpt.app/api/v1
+    description: Production
+  - url: https://staging-api.faithgpt.app/api/v1
+    description: Staging
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+tags:
+  - name: Auth
+  - name: Users
+  - name: Organizations
+  - name: Subscriptions
+  - name: Bible
+  - name: Bible Interactions
+  - name: Reading Plans
+  - name: Scripture Analysis
+  - name: Devotions
+  - name: AI Study
+  - name: Prayers
+  - name: Sermons
+  - name: Visual Studio
+  - name: Journal
+  - name: Growth
+  - name: Community
+  - name: Groups
+  - name: Notifications
+  - name: Admin
+
+security:
+  - bearerAuth: []
+
+# =====================================================================================
+# PATHS
+# =====================================================================================
+paths:
+
+  # ---------------------------------------------------------------------------------
+  # AUTH
+  # ---------------------------------------------------------------------------------
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user (email/password)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 10 }
+                name: { type: string }
+                denominationLens: { type: string, nullable: true, example: "NEUTRAL" }
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "400":
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email/password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                deviceInfo: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Exchange a refresh token for a new access/refresh token pair (rotation)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: New token pair issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke a refresh token (log out this device)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "204":
+          description: Logged out
+
+  /auth/oauth/{provider}/callback:
+    post:
+      tags: [Auth]
+      summary: Exchange a Google/Apple/Facebook identity token for a FaithGPT session
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, apple, facebook]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties:
+                idToken: { type: string }
+                deviceInfo: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Authenticated (existing account linked or new account created)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/verify-phone:
+    post:
+      tags: [Auth]
+      summary: Verify a phone number via Twilio Verify OTP, or sign in/up with PHONE_OTP
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, code]
+              properties:
+                phone: { type: string, example: "+233201234567" }
+                code: { type: string, example: "123456" }
+                deviceInfo: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Verified / authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/verify-email:
+    get:
+      tags: [Auth]
+      summary: Verify email via single-use token (24h expiry)
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Email verified
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/password-reset/request:
+    post:
+      tags: [Auth]
+      summary: Request a password reset email (always returns 202)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "202":
+          description: Accepted (no account-existence leakage)
+
+  /auth/password-reset/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirm a password reset, revoking all existing refresh tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token: { type: string }
+                newPassword: { type: string, minLength: 10 }
+      responses:
+        "200":
+          description: Password updated, all sessions revoked
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  # ---------------------------------------------------------------------------------
+  # USERS
+  # ---------------------------------------------------------------------------------
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get the authenticated user's profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeUser'
+    patch:
+      tags: [Users]
+      summary: Update the authenticated user's profile/preferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                avatarUrl: { type: string, nullable: true }
+                denominationLens: { type: string, nullable: true }
+                locale: { type: string }
+                timezone: { type: string }
+                defaultBibleVersionId: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeUser'
+    delete:
+      tags: [Users]
+      summary: Soft-delete the authenticated user's account (14-day recoverable, §12 §5)
+      responses:
+        "202":
+          description: Account scheduled for deletion
+
+  /users/me/sessions:
+    get:
+      tags: [Users]
+      summary: List active sessions (non-revoked refresh tokens)
+      responses:
+        "200":
+          description: Active sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RefreshTokenSummary'
+
+  /users/me/sessions/{id}:
+    delete:
+      tags: [Users]
+      summary: Revoke a single session ("log out this device")
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "204":
+          description: Session revoked
+
+  /users/me/export:
+    post:
+      tags: [Users]
+      summary: Request a "Download My Data" export (async job, §12 §5)
+      responses:
+        "202":
+          description: Export job queued; a signed S3 download link will be emailed (24h expiry)
+
+  # ---------------------------------------------------------------------------------
+  # ORGANIZATIONS
+  # ---------------------------------------------------------------------------------
+  /organizations:
+    get:
+      tags: [Organizations]
+      summary: List organizations the authenticated user belongs to
+      responses:
+        "200":
+          description: Organization memberships
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Organization'
+    post:
+      tags: [Organizations]
+      summary: Create a new Ministry organization (initiates MINISTRY subscription setup)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                type: { type: string, example: "CHURCH" }
+                billingEmail: { type: string, format: email, nullable: true }
+      responses:
+        "201":
+          description: Organization created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeOrganization'
+
+  /organizations/{id}:
+    get:
+      tags: [Organizations]
+      summary: Get organization detail
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "200":
+          description: Organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeOrganization'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+    patch:
+      tags: [Organizations]
+      summary: Update organization (name, seatLimit, billingEmail) — ADMIN role in org
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                seatLimit: { type: integer }
+                billingEmail: { type: string, format: email, nullable: true }
+      responses:
+        "200":
+          description: Updated organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeOrganization'
+
+  /organizations/{id}/members:
+    get:
+      tags: [Organizations]
+      summary: List organization members
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrganizationMember'
+                  meta:
+                    $ref: '#/components/schemas/OffsetPaginationMeta'
+    post:
+      tags: [Organizations]
+      summary: Invite/add a member to the organization
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, roleInOrg]
+              properties:
+                email: { type: string, format: email }
+                roleInOrg: { type: string, enum: [ADMIN, STAFF] }
+      responses:
+        "201":
+          description: Member added/invited
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OrganizationMember'
+
+  # ---------------------------------------------------------------------------------
+  # SUBSCRIPTIONS
+  # ---------------------------------------------------------------------------------
+  /subscriptions/me:
+    get:
+      tags: [Subscriptions]
+      summary: Get the authenticated user's (or org's) subscription, tier, and entitlements
+      responses:
+        "200":
+          description: Subscription + resolved entitlements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/Subscription'
+                      - type: object
+                        properties:
+                          entitlements:
+                            $ref: '#/components/schemas/Entitlements'
+
+  /subscriptions/checkout:
+    post:
+      tags: [Subscriptions]
+      summary: Create a Stripe Checkout session (web) for a tier/billing-cycle change
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tier, billingCycle]
+              properties:
+                tier:
+                  $ref: '#/components/schemas/SubscriptionTier'
+                billingCycle: { type: string, enum: [MONTHLY, ANNUAL] }
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      checkoutUrl: { type: string, format: uri }
+
+  /subscriptions/invoices:
+    get:
+      tags: [Subscriptions]
+      summary: List billing history for the authenticated user/org
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        "200":
+          description: Invoices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Invoice'
+                  meta:
+                    $ref: '#/components/schemas/OffsetPaginationMeta'
+
+  /subscriptions/webhooks/{provider}:
+    post:
+      tags: [Subscriptions]
+      summary: Inbound billing webhook (signature-verified, not bearerAuth)
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [stripe, apple, google]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Provider-specific payload (Stripe event, Apple Server Notification V2, or Google RTDN)
+      responses:
+        "200":
+          description: Acknowledged
+
+  # ---------------------------------------------------------------------------------
+  # BIBLE
+  # ---------------------------------------------------------------------------------
+  /bible/versions:
+    get:
+      tags: [Bible]
+      summary: List available Bible versions
+      security: []
+      responses:
+        "200":
+          description: Bible versions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BibleVersion'
+
+  /bible/books:
+    get:
+      tags: [Bible]
+      summary: List the 66 canonical Bible books
+      security: []
+      responses:
+        "200":
+          description: Bible books
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BibleBook'
+
+  /bible/books/{bookId}/chapters/{chapter}:
+    get:
+      tags: [Bible]
+      summary: Get all verses for a chapter in a given version
+      security: []
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: chapter
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: version
+          in: query
+          required: false
+          schema: { type: string, default: "KJV", example: "ESV" }
+      responses:
+        "200":
+          description: Verses with text for the requested version
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerseWithText'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /bible/search:
+    get:
+      tags: [Bible]
+      summary: Full-text search across Bible text (by version)
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - name: version
+          in: query
+          required: false
+          schema: { type: string, default: "KJV" }
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Matching verses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerseWithText'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+
+  # ---------------------------------------------------------------------------------
+  # BIBLE INTERACTIONS (Highlights / Notes / Bookmarks)
+  # ---------------------------------------------------------------------------------
+  /highlights:
+    get:
+      tags: [Bible Interactions]
+      summary: List the authenticated user's highlights
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Highlights
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Highlight'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+    post:
+      tags: [Bible Interactions]
+      summary: Highlight a verse
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verseId]
+              properties:
+                verseId: { type: string }
+                color: { type: string, default: "yellow" }
+      responses:
+        "201":
+          description: Highlight created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Highlight'
+
+  /highlights/{id}:
+    delete:
+      tags: [Bible Interactions]
+      summary: Remove a highlight
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "204":
+          description: Removed
+
+  /notes:
+    get:
+      tags: [Bible Interactions]
+      summary: List the authenticated user's verse notes
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Notes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Note'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+    post:
+      tags: [Bible Interactions]
+      summary: Create a note on a verse
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verseId, content]
+              properties:
+                verseId: { type: string }
+                content: { type: string }
+      responses:
+        "201":
+          description: Note created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Note'
+
+  /notes/{id}:
+    patch:
+      tags: [Bible Interactions]
+      summary: Update a note
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+      responses:
+        "200":
+          description: Updated note
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Note'
+    delete:
+      tags: [Bible Interactions]
+      summary: Delete a note
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "204":
+          description: Deleted
+
+  /bookmarks:
+    get:
+      tags: [Bible Interactions]
+      summary: List the authenticated user's bookmarks
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Bookmarks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Bookmark'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+    post:
+      tags: [Bible Interactions]
+      summary: Bookmark a verse
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verseId]
+              properties:
+                verseId: { type: string }
+      responses:
+        "201":
+          description: Bookmark created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Bookmark'
+
+  /bookmarks/{id}:
+    delete:
+      tags: [Bible Interactions]
+      summary: Remove a bookmark
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "204":
+          description: Removed
+
+  # ---------------------------------------------------------------------------------
+  # READING PLANS
+  # ---------------------------------------------------------------------------------
+  /reading-plans:
+    get:
+      tags: [Reading Plans]
+      summary: List the reading plan library
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema: { type: string }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        "200":
+          description: Reading plans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReadingPlan'
+                  meta:
+                    $ref: '#/components/schemas/OffsetPaginationMeta'
+
+  /reading-plans/{id}:
+    get:
+      tags: [Reading Plans]
+      summary: Get a reading plan with its day-by-day passages
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "200":
+          description: Reading plan detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ReadingPlanDetail'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /reading-plans/{id}/enroll:
+    post:
+      tags: [Reading Plans]
+      summary: Enroll the authenticated user in a reading plan
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "201":
+          description: Enrolled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserReadingPlan'
+        "409":
+          description: Already enrolled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /reading-plans/my:
+    get:
+      tags: [Reading Plans]
+      summary: List the authenticated user's active/completed plans
+      responses:
+        "200":
+          description: User reading plans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserReadingPlan'
+
+  # ---------------------------------------------------------------------------------
+  # SCRIPTURE ANALYSIS ENGINE
+  # ---------------------------------------------------------------------------------
+  /scripture-analysis:
+    post:
+      tags: [Scripture Analysis]
+      summary: Run (or retrieve cached) Scripture Analysis for a passage
+      description: >
+        Returns detected Themes and Biblical Elements, plus Theme Discovery suggestions, for a
+        passage (§06 AI Architecture). Backed by ScriptureAnalysisCache — meta.cacheHit indicates
+        whether the AI Gateway was invoked.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [passageKey]
+              properties:
+                passageKey: { type: string, example: "ROM.8.28-39" }
+                versionCode: { type: string, default: "ESV" }
+      responses:
+        "200":
+          description: Scripture analysis result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ScriptureAnalysisResult'
+                  meta:
+                    type: object
+                    properties:
+                      cacheHit: { type: boolean }
+
+  # ---------------------------------------------------------------------------------
+  # DEVOTIONS (AI Verse-to-Devotion Engine™)
+  # ---------------------------------------------------------------------------------
+  /devotions:
+    get:
+      tags: [Devotions]
+      summary: List "My Devotions"
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DevotionType'
+      responses:
+        "200":
+          description: Devotions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Devotion'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+
+  /devotions/generate:
+    post:
+      tags: [Devotions]
+      summary: Generate a devotion via the AI Verse-to-Devotion Engine™ (streamable)
+      description: >
+        Clients sending `Accept: text/event-stream` receive a Server-Sent Events stream with one
+        `event: section` per canonical section (§00 §8), followed by `event: done` carrying the
+        persisted devotionId. Clients sending `Accept: application/json` receive the full Devotion
+        object once generation completes. See §09 §6 for the full SSE protocol.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateDevotionRequest'
+      responses:
+        "201":
+          description: Devotion generated (non-streamed JSON response)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Devotion'
+            text/event-stream:
+              schema:
+                type: string
+                description: See §09 §6 — sequence of `section`/`done`/`error` SSE events
+        "429":
+          $ref: '#/components/responses/QuotaExceeded'
+
+  /devotions/{id}:
+    get:
+      tags: [Devotions]
+      summary: Get a single devotion
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "200":
+          description: Devotion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Devotion'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /devotions/{id}/sections/{sectionKey}/regenerate:
+    post:
+      tags: [Devotions]
+      summary: Regenerate a single section of a devotion (PLUS+/PREMIUM+ per §11 §2)
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - name: sectionKey
+          in: path
+          required: true
+          schema: { type: string, example: "lifeApplications" }
+      responses:
+        "200":
+          description: Updated devotion with the regenerated section
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Devotion'
+        "403":
+          $ref: '#/components/responses/TierRequired'
+
+  # ---------------------------------------------------------------------------------
+  # AI BIBLE STUDY ASSISTANT™
+  # ---------------------------------------------------------------------------------
+  /ai-conversations:
+    get:
+      tags: [AI Study]
+      summary: List the authenticated user's AI Bible Study conversations
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AIConversation'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+    post:
+      tags: [AI Study]
+      summary: Start a new conversation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contextPassageKey: { type: string, nullable: true, example: "ROM.8.28-39" }
+      responses:
+        "201":
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AIConversation'
+
+  /ai-conversations/{id}:
+    get:
+      tags: [AI Study]
+      summary: Get a conversation with its messages
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AIConversationDetail'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /ai-conversations/{id}/messages:
+    post:
+      tags: [AI Study]
+      summary: Ask a question in a conversation (streamable assistant reply)
+      description: >
+        Same SSE/JSON dual-mode contract as `/devotions/generate` (§09 §6). The assistant message
+        is streamed token-by-token under `event: section` with `section: "answer"`, then
+        `event: done` carries the persisted AIMessage id.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string, example: "What does it mean that 'all things work together for good'?" }
+                category:
+                  $ref: '#/components/schemas/AIQuestionCategory'
+      responses:
+        "201":
+          description: Assistant reply (non-streamed)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AIMessage'
+            text/event-stream:
+              schema:
+                type: string
+                description: See §09 §6
+        "429":
+          $ref: '#/components/responses/QuotaExceeded'
+        "451":
+          description: Blocked by content-safety policy (crisis-resource intercept, §12 §3)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  # ---------------------------------------------------------------------------------
+  # AI PRAYER GENERATOR
+  # ---------------------------------------------------------------------------------
+  /prayers:
+    get:
+      tags: [Prayers]
+      summary: List "My Prayers"
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Prayers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Prayer'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+
+  /prayers/generate:
+    post:
+      tags: [Prayers]
+      summary: Generate a prayer via the AI Prayer Generator (streamable)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type:
+                  $ref: '#/components/schemas/PrayerType'
+                passageKey: { type: string, nullable: true, example: "PSA.23.1-6" }
+                topic: { type: string, nullable: true, example: "starting a new job" }
+      responses:
+        "201":
+          description: Prayer generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Prayer'
+            text/event-stream:
+              schema:
+                type: string
+                description: See §09 §6
+        "429":
+          $ref: '#/components/responses/QuotaExceeded'
+
+  # ---------------------------------------------------------------------------------
+  # SERMON STUDIO
+  # ---------------------------------------------------------------------------------
+  /sermons:
+    get:
+      tags: [Sermons]
+      summary: List "My Sermons" (PREMIUM+ per §11 §2)
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Sermons
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sermon'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+        "403":
+          $ref: '#/components/responses/TierRequired'
+
+  /sermons/generate:
+    post:
+      tags: [Sermons]
+      summary: Generate a sermon/lesson outline (PREMIUM+, streamable)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [passageOrTopic, outputType]
+              properties:
+                passageOrTopic: { type: string, example: "ROM.8.28-39" }
+                audience: { type: string, example: "General Congregation", nullable: true }
+                outputType:
+                  type: string
+                  enum: [SERMON, SABBATH_SCHOOL_LESSON, BIBLE_STUDY_GUIDE, YOUTH_MESSAGE, CHILDRENS_MESSAGE, TEACHING_NOTES, SLIDE_OUTLINE]
+      responses:
+        "201":
+          description: Sermon generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Sermon'
+            text/event-stream:
+              schema:
+                type: string
+                description: See §09 §6
+        "403":
+          $ref: '#/components/responses/TierRequired'
+
+  # ---------------------------------------------------------------------------------
+  # VISUAL STUDIO
+  # ---------------------------------------------------------------------------------
+  /images:
+    get:
+      tags: [Visual Studio]
+      summary: List "My Images"
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Image generations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ImageGeneration'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+
+  /images/generate:
+    post:
+      tags: [Visual Studio]
+      summary: Queue an AI Scripture Image Generator™ job (async, BullMQ `image-generation` queue)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateImageRequest'
+      responses:
+        "202":
+          description: Job queued — poll GET /images/{id} or await push notification
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ImageGeneration'
+        "429":
+          $ref: '#/components/responses/QuotaExceeded'
+        "451":
+          description: Blocked by pre-generation content filter (§19 §1)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /images/{id}:
+    get:
+      tags: [Visual Studio]
+      summary: Get image generation status/result
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "200":
+          description: Image generation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ImageGeneration'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /story-visualizations:
+    post:
+      tags: [Visual Studio]
+      summary: Generate an AI Bible Story Visualizer™ sequence (async, multi-frame)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [storyKey, style, outputType]
+              properties:
+                storyKey: { type: string, example: "david-and-goliath" }
+                style:
+                  $ref: '#/components/schemas/ImageStyle'
+                outputType:
+                  type: string
+                  enum: [STORYBOARD, COMIC, STORYBOOK, TEACHING_SLIDES]
+      responses:
+        "202":
+          description: Job queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BibleStoryVisualization'
+
+  /story-visualizations/{id}:
+    get:
+      tags: [Visual Studio]
+      summary: Get a story visualization with its frames
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "200":
+          description: Story visualization with frames
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BibleStoryVisualizationDetail'
+
+  /memory-verse-cards:
+    post:
+      tags: [Visual Studio]
+      summary: Generate a Memory Verse Visualizer™ card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verseId, format]
+              properties:
+                verseId: { type: string }
+                format:
+                  $ref: '#/components/schemas/MemoryCardFormat'
+                style:
+                  $ref: '#/components/schemas/ImageStyle'
+      responses:
+        "202":
+          description: Job queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MemoryVerseCard'
+    get:
+      tags: [Visual Studio]
+      summary: List "My Memory Verse Cards"
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Memory verse cards
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MemoryVerseCard'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+
+  # ---------------------------------------------------------------------------------
+  # JOURNAL
+  # ---------------------------------------------------------------------------------
+  /journal-entries:
+    get:
+      tags: [Journal]
+      summary: List journal entries
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/JournalEntryType'
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Journal entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JournalEntry'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+    post:
+      tags: [Journal]
+      summary: Create a journal entry
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, content]
+              properties:
+                type:
+                  $ref: '#/components/schemas/JournalEntryType'
+                title: { type: string, nullable: true }
+                content: { type: string }
+                tags:
+                  type: array
+                  items: { type: string }
+                relatedDevotionId: { type: string, nullable: true }
+                relatedPrayerId: { type: string, nullable: true }
+      responses:
+        "201":
+          description: Entry created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JournalEntry'
+
+  /journal-entries/{id}:
+    get:
+      tags: [Journal]
+      summary: Get a journal entry
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "200":
+          description: Journal entry
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JournalEntry'
+    patch:
+      tags: [Journal]
+      summary: Update a journal entry
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, nullable: true }
+                content: { type: string }
+                tags:
+                  type: array
+                  items: { type: string }
+      responses:
+        "200":
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JournalEntry'
+    delete:
+      tags: [Journal]
+      summary: Delete a journal entry
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "204":
+          description: Deleted
+
+  /prayer-requests:
+    get:
+      tags: [Journal]
+      summary: List prayer requests (own, or group/public per visibility)
+      parameters:
+        - name: visibility
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PrayerRequestVisibility'
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Prayer requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PrayerRequest'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+    post:
+      tags: [Journal]
+      summary: Create a prayer request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+                isAnonymous: { type: boolean, default: false }
+                visibility:
+                  $ref: '#/components/schemas/PrayerRequestVisibility'
+                groupId: { type: string, nullable: true }
+      responses:
+        "201":
+          description: Prayer request created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PrayerRequest'
+
+  /prayer-requests/{id}/answer:
+    post:
+      tags: [Journal]
+      summary: Mark a prayer request as answered
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answeredNote: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Updated prayer request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PrayerRequest'
+
+  # ---------------------------------------------------------------------------------
+  # GROWTH
+  # ---------------------------------------------------------------------------------
+  /growth/dashboard:
+    get:
+      tags: [Growth]
+      summary: Get the Spiritual Growth Dashboard™ summary (streaks, stats, achievements)
+      responses:
+        "200":
+          description: Growth dashboard
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GrowthDashboard'
+
+  /growth/achievements:
+    get:
+      tags: [Growth]
+      summary: List all achievements with the user's unlock status
+      responses:
+        "200":
+          description: Achievements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AchievementWithProgress'
+
+  # ---------------------------------------------------------------------------------
+  # COMMUNITY
+  # ---------------------------------------------------------------------------------
+  /community/feed:
+    get:
+      tags: [Community]
+      summary: Get the community feed
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Feed posts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommunityPost'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+
+  /community/posts:
+    post:
+      tags: [Community]
+      summary: Create a community post (share devotion/testimony/prayer/image/insight)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, content]
+              properties:
+                type:
+                  $ref: '#/components/schemas/CommunityPostType'
+                content: { type: string }
+                devotionId: { type: string, nullable: true }
+                imageGenerationId: { type: string, nullable: true }
+                groupId: { type: string, nullable: true }
+      responses:
+        "201":
+          description: Post created (moderationStatus=PENDING until auto-moderation completes)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CommunityPost'
+
+  /community/posts/{id}/comments:
+    post:
+      tags: [Community]
+      summary: Comment on a post
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+      responses:
+        "201":
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PostComment'
+
+  /community/posts/{id}/like:
+    post:
+      tags: [Community]
+      summary: Like a post (idempotent)
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "204":
+          description: Liked
+    delete:
+      tags: [Community]
+      summary: Unlike a post
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "204":
+          description: Unliked
+
+  /community/follow/{userId}:
+    post:
+      tags: [Community]
+      summary: Follow a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Followed
+    delete:
+      tags: [Community]
+      summary: Unfollow a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Unfollowed
+
+  # ---------------------------------------------------------------------------------
+  # GROUPS
+  # ---------------------------------------------------------------------------------
+  /groups:
+    get:
+      tags: [Groups]
+      summary: List discoverable groups + the user's own groups
+      parameters:
+        - name: mine
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        "200":
+          description: Groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Group'
+                  meta:
+                    $ref: '#/components/schemas/OffsetPaginationMeta'
+    post:
+      tags: [Groups]
+      summary: Create a Community Group (PLUS+ per §11 §2)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string, nullable: true }
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Group'
+        "403":
+          $ref: '#/components/responses/TierRequired'
+
+  /groups/{id}:
+    get:
+      tags: [Groups]
+      summary: Get group detail (feed, members, prayer wall accessed via other resources)
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "200":
+          description: Group
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Group'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /groups/{id}/join:
+    post:
+      tags: [Groups]
+      summary: Join a group
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "201":
+          description: Joined
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GroupMembership'
+
+  # ---------------------------------------------------------------------------------
+  # NOTIFICATIONS
+  # ---------------------------------------------------------------------------------
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List the authenticated user's notifications
+      parameters:
+        - $ref: '#/components/parameters/CursorParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  meta:
+                    $ref: '#/components/schemas/CursorPaginationMeta'
+
+  /notifications/{id}/read:
+    post:
+      tags: [Notifications]
+      summary: Mark a notification as read
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        "204":
+          description: Marked read
+
+  /notifications/preferences:
+    get:
+      tags: [Notifications]
+      summary: Get notification preferences (by NotificationType)
+      responses:
+        "200":
+          description: Preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: { type: boolean }
+                    example:
+                      DAILY_DEVOTION: true
+                      STREAK_REMINDER: true
+                      PRAYER_ANSWERED: true
+                      GROUP_ACTIVITY: true
+                      COMMUNITY_INTERACTION: false
+                      SUBSCRIPTION: true
+                      SYSTEM: true
+    patch:
+      tags: [Notifications]
+      summary: Update notification preferences (transactional types always-on, non-editable)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: { type: boolean }
+      responses:
+        "200":
+          description: Updated preferences
+
+  # ---------------------------------------------------------------------------------
+  # ADMIN (subset — see §17 Admin Portal Design for full UI)
+  # ---------------------------------------------------------------------------------
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Search/list users (SUPPORT, ADMIN, SUPER_ADMIN)
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string, description: "Search by email, name, or ID" }
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserRole'
+        - name: tier
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/SubscriptionTier'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  meta:
+                    $ref: '#/components/schemas/OffsetPaginationMeta'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/users/{id}/role:
+    patch:
+      tags: [Admin]
+      summary: Change a user's role (ADMIN, SUPER_ADMIN) — writes AdminAuditLog
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  $ref: '#/components/schemas/UserRole'
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/organizations/{id}:
+    patch:
+      tags: [Admin]
+      summary: Update an organization's seats/billing (ADMIN, SUPER_ADMIN)
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                seatLimit: { type: integer }
+                billingEmail: { type: string, format: email, nullable: true }
+      responses:
+        "200":
+          description: Updated organization
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Organization'
+
+  /admin/ai-usage:
+    get:
+      tags: [Admin]
+      summary: Aggregate AI usage analytics (ADMIN, SUPER_ADMIN)
+      parameters:
+        - name: feature
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AIFeature'
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Aggregated usage + cost
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AIUsageSummary'
+
+  /admin/moderation/images:
+    get:
+      tags: [Admin]
+      summary: List flagged image generations (MODERATOR, ADMIN, SUPER_ADMIN)
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        "200":
+          description: Flagged images
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ImageGeneration'
+                  meta:
+                    $ref: '#/components/schemas/OffsetPaginationMeta'
+
+  /admin/moderation/posts/{id}:
+    patch:
+      tags: [Admin]
+      summary: Resolve a flagged community post (MODERATOR, ADMIN, SUPER_ADMIN)
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [moderationStatus]
+              properties:
+                moderationStatus:
+                  $ref: '#/components/schemas/ModerationStatus'
+      responses:
+        "200":
+          description: Updated post
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CommunityPost'
+
+# =====================================================================================
+# COMPONENTS
+# =====================================================================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: Opaque cuid()
+    CursorParam:
+      name: cursor
+      in: query
+      required: false
+      schema: { type: string }
+    LimitParam:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, default: 20, maximum: 100 }
+    PageParam:
+      name: page
+      in: query
+      required: false
+      schema: { type: integer, default: 1 }
+    PageSizeParam:
+      name: pageSize
+      in: query
+      required: false
+      schema: { type: integer, default: 20, maximum: 100 }
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Unauthorized:
+      description: Missing/invalid credentials or token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Forbidden:
+      description: Authenticated but not authorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Conflict:
+      description: Resource conflict (e.g., unique constraint)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    QuotaExceeded:
+      description: Tier-based AI usage quota exceeded (429 RATE_LIMITED, code=QUOTA_EXCEEDED in details)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    TierRequired:
+      description: Capability requires a higher subscription tier (403, code=TIER_REQUIRED)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+
+  schemas:
+    # --- Envelopes ---------------------------------------------------------
+    ErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: "VALIDATION_ERROR" }
+            message: { type: string }
+            details:
+              type: object
+              nullable: true
+              additionalProperties: true
+
+    CursorPaginationMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            nextCursor: { type: string, nullable: true }
+            hasMore: { type: boolean }
+
+    OffsetPaginationMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            page: { type: integer }
+            pageSize: { type: integer }
+            total: { type: integer }
+            totalPages: { type: integer }
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            accessToken: { type: string }
+            refreshToken: { type: string }
+            user:
+              $ref: '#/components/schemas/User'
+
+    EnvelopeUser:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/User'
+
+    EnvelopeOrganization:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Organization'
+
+    # --- Enums (mirror schema.prisma verbatim, §00 §13) ---------------------
+    UserRole:
+      type: string
+      enum: [USER, GROUP_LEADER, MINISTRY_ADMIN, MODERATOR, CONTENT_EDITOR, SUPPORT, ADMIN, SUPER_ADMIN]
+
+    SubscriptionTier:
+      type: string
+      enum: [FREE, PLUS, PREMIUM, MINISTRY, LIFETIME]
+
+    SubscriptionStatus:
+      type: string
+      enum: [ACTIVE, TRIALING, PAST_DUE, CANCELED, EXPIRED, PAUSED]
+
+    BillingProvider:
+      type: string
+      enum: [STRIPE, APPLE_IAP, GOOGLE_PLAY, PAYSTACK, MANUAL]
+
+    AuthProviderType:
+      type: string
+      enum: [PASSWORD, GOOGLE, APPLE, FACEBOOK, PHONE_OTP]
+
+    Testament:
+      type: string
+      enum: [OLD, NEW]
+
+    DevotionType:
+      type: string
+      enum: [PERSONAL, FAMILY, YOUTH, CHILDREN, PATHFINDER, WOMEN, MEN, LEADERSHIP, MARRIAGE, EVANGELISTIC, SABBATH_SCHOOL, SMALL_GROUP, SERMON_PREP]
+
+    DevotionDepth:
+      type: string
+      enum: [QUICK, STANDARD, DEEP, ADVANCED, TEACHING, SERMON]
+
+    BiblicalElementType:
+      type: string
+      enum: [COMMAND, PROMISE, WARNING, BLESSING, PROPHECY, FULFILLMENT, CHARACTER_LESSON, LIFE_APPLICATION, SPIRITUAL_PRINCIPLE]
+
+    PrayerType:
+      type: string
+      enum: [PERSONAL, FAMILY, HEALING, INTERCESSORY, GRATITUDE, LEADERSHIP, MARRIAGE, GUIDANCE, STRENGTH]
+
+    AIQuestionCategory:
+      type: string
+      enum: [MEANING, SIMPLE_EXPLANATION, CHILDRENS_EXPLANATION, HISTORICAL_BACKGROUND, CULTURAL_CONTEXT, MODERN_APPLICATION, HEBREW_ORIGINAL, GREEK_ORIGINAL, CROSS_REFERENCES, CHARACTER_PARALLELS, CHRIST_CONNECTION, GENERAL]
+
+    MessageRole:
+      type: string
+      enum: [USER, ASSISTANT, SYSTEM]
+
+    ImageStyle:
+      type: string
+      enum: [PHOTOREALISTIC, CINEMATIC, CHRISTIAN_ARTWORK, CARTOON, CHILDRENS_STORYBOOK, COMIC_BOOK, WATERCOLOR, OIL_PAINTING, MINIMALIST_POSTER, SOCIAL_MEDIA_GRAPHIC]
+
+    ImageSourceType:
+      type: string
+      enum: [VERSE, CHAPTER, BIBLE_STORY, DEVOTION, PRAYER, SERMON, MEMORY_VERSE, CUSTOM_PROMPT]
+
+    GenerationStatus:
+      type: string
+      enum: [PENDING, PROCESSING, COMPLETED, FAILED, MODERATION_BLOCKED]
+
+    MemoryCardFormat:
+      type: string
+      enum: [FLASHCARD, WALLPAPER, LOCK_SCREEN, CHILDRENS_CARD, PRINTABLE]
+
+    JournalEntryType:
+      type: string
+      enum: [NOTE, DEVOTION, PRAYER, TESTIMONY, INSIGHT, ANSWERED_PRAYER]
+
+    PrayerRequestVisibility:
+      type: string
+      enum: [PRIVATE, GROUP, PUBLIC]
+
+    StreakType:
+      type: string
+      enum: [READING, PRAYER, DEVOTION]
+
+    GroupRole:
+      type: string
+      enum: [MEMBER, LEADER]
+
+    CommunityPostType:
+      type: string
+      enum: [DEVOTION_SHARE, TESTIMONY, PRAYER_REQUEST, INSIGHT, IMAGE_SHARE]
+
+    ModerationStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED, FLAGGED]
+
+    NotificationType:
+      type: string
+      enum: [DAILY_DEVOTION, STREAK_REMINDER, PRAYER_ANSWERED, GROUP_ACTIVITY, COMMUNITY_INTERACTION, SUBSCRIPTION, SYSTEM]
+
+    AIFeature:
+      type: string
+      enum: [DEVOTION, BIBLE_STUDY, PRAYER, SERMON, SCRIPTURE_ANALYSIS, IMAGE_GENERATION, STORY_VISUALIZER, CONTENT_CREATOR]
+
+    # --- Core models ---------------------------------------------------------
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string, format: email, nullable: true }
+        phone: { type: string, nullable: true }
+        name: { type: string }
+        avatarUrl: { type: string, nullable: true }
+        role:
+          $ref: '#/components/schemas/UserRole'
+        tier:
+          $ref: '#/components/schemas/SubscriptionTier'
+        denominationLens: { type: string, nullable: true, example: "NEUTRAL" }
+        locale: { type: string, example: "en" }
+        timezone: { type: string, example: "UTC" }
+        defaultBibleVersionId: { type: string, nullable: true }
+        emailVerifiedAt: { type: boolean }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    RefreshTokenSummary:
+      type: object
+      properties:
+        id: { type: string }
+        deviceInfo: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        isCurrent: { type: boolean }
+
+    Organization:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type: { type: string, example: "CHURCH" }
+        seatLimit: { type: integer }
+        billingEmail: { type: string, format: email, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    OrganizationMember:
+      type: object
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        userId: { type: string }
+        roleInOrg: { type: string, enum: [ADMIN, STAFF] }
+        joinedAt: { type: string, format: date-time }
+        user:
+          $ref: '#/components/schemas/User'
+
+    Subscription:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string, nullable: true }
+        organizationId: { type: string, nullable: true }
+        tier:
+          $ref: '#/components/schemas/SubscriptionTier'
+        status:
+          $ref: '#/components/schemas/SubscriptionStatus'
+        provider:
+          $ref: '#/components/schemas/BillingProvider'
+        seats: { type: integer }
+        currentPeriodStart: { type: string, format: date-time, nullable: true }
+        currentPeriodEnd: { type: string, format: date-time, nullable: true }
+        cancelAtPeriodEnd: { type: boolean }
+        trialEndsAt: { type: string, format: date-time, nullable: true }
+
+    Entitlements:
+      type: object
+      description: Resolved {tier, quotas, usageRemaining} per §11 §7 EntitlementService
+      properties:
+        tier:
+          $ref: '#/components/schemas/SubscriptionTier'
+        quotas:
+          type: object
+          additionalProperties: true
+          example:
+            aiStudyQuestionsPerDay: 50
+            devotionDeepPerMonth: -1
+            imagesPerMonth: 50
+        usageRemaining:
+          type: object
+          additionalProperties: true
+          example:
+            aiStudyQuestionsPerDay: 37
+            imagesPerMonth: 12
+
+    Invoice:
+      type: object
+      properties:
+        id: { type: string }
+        subscriptionId: { type: string }
+        amountCents: { type: integer }
+        currency: { type: string, example: "USD" }
+        status: { type: string, enum: [paid, open, void, uncollectible] }
+        providerInvoiceId: { type: string, nullable: true }
+        issuedAt: { type: string, format: date-time }
+
+    # --- Bible ---------------------------------------------------------------
+    BibleVersion:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string, example: "ESV" }
+        name: { type: string, example: "English Standard Version" }
+        language: { type: string, example: "en" }
+        license: { type: string, enum: [PUBLIC_DOMAIN, LICENSED] }
+        isOfflineBundled: { type: boolean }
+        publisher: { type: string, nullable: true }
+
+    BibleBook:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string, example: "Romans" }
+        abbreviation: { type: string, example: "Rom" }
+        testament:
+          $ref: '#/components/schemas/Testament'
+        orderIndex: { type: integer, example: 45 }
+        chapterCount: { type: integer, example: 16 }
+
+    VerseWithText:
+      type: object
+      properties:
+        id: { type: string }
+        bookId: { type: string }
+        chapter: { type: integer }
+        verse: { type: integer }
+        reference: { type: string, example: "Romans 8:28" }
+        text: { type: string, example: "And we know that for those who love God all things work together for good..." }
+        versionCode: { type: string, example: "ESV" }
+
+    Highlight:
+      type: object
+      properties:
+        id: { type: string }
+        verseId: { type: string }
+        color: { type: string, example: "yellow" }
+        createdAt: { type: string, format: date-time }
+
+    Note:
+      type: object
+      properties:
+        id: { type: string }
+        verseId: { type: string }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Bookmark:
+      type: object
+      properties:
+        id: { type: string }
+        verseId: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    # --- Reading Plans ---------------------------------------------------------
+    ReadingPlan:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        durationDays: { type: integer }
+        category: { type: string, example: "New Testament in 30 Days" }
+        isPremium: { type: boolean }
+
+    ReadingPlanDetail:
+      allOf:
+        - $ref: '#/components/schemas/ReadingPlan'
+        - type: object
+          properties:
+            days:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: string }
+                  dayNumber: { type: integer }
+                  title: { type: string, nullable: true }
+                  devotionalNote: { type: string, nullable: true }
+                  passages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        bookId: { type: string }
+                        chapterStart: { type: integer }
+                        verseStart: { type: integer, nullable: true }
+                        chapterEnd: { type: integer }
+                        verseEnd: { type: integer, nullable: true }
+
+    UserReadingPlan:
+      type: object
+      properties:
+        id: { type: string }
+        planId: { type: string }
+        startedAt: { type: string, format: date-time }
+        currentDay: { type: integer }
+        completedAt: { type: string, format: date-time, nullable: true }
+        plan:
+          $ref: '#/components/schemas/ReadingPlan'
+
+    # --- Scripture Analysis ---------------------------------------------------------
+    ScriptureAnalysisResult:
+      type: object
+      properties:
+        passageKey: { type: string, example: "ROM.8.28-39" }
+        versionCode: { type: string, example: "ESV" }
+        themes:
+          type: array
+          items:
+            type: object
+            properties:
+              slug: { type: string, example: "hope" }
+              name: { type: string, example: "Hope" }
+              relevance: { type: number, format: float, example: 0.92 }
+        elements:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                $ref: '#/components/schemas/BiblicalElementType'
+              note: { type: string, nullable: true }
+        suggestedThemes:
+          type: array
+          items: { type: string }
+          example: ["God's Sovereign Love", "Suffering and Glory", "Nothing Can Separate Us"]
+
+    # --- Devotions (AI Verse-to-Devotion Engine™) ---------------------------------------------------------
+    DevotionSections:
+      type: object
+      description: Canonical 15-section structured output, §00 §8
+      properties:
+        title: { type: string }
+        keyScripture: { type: string }
+        historicalContext: { type: string }
+        biblicalContext: { type: string }
+        verseExplanation: { type: string }
+        theologicalInsights: { type: string }
+        spiritualLessons: { type: string }
+        lifeApplications: { type: string }
+        reflectionQuestions:
+          type: array
+          items: { type: string }
+        discussionQuestions:
+          type: array
+          items: { type: string }
+        prayer: { type: string }
+        actionSteps:
+          type: array
+          items: { type: string }
+        memoryVerse: { type: string }
+        relatedScriptures:
+          type: array
+          items: { type: string }
+        closingEncouragement: { type: string }
+
+    Devotion:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        passageKey: { type: string, example: "ROM.8.28-39" }
+        versionCode: { type: string, example: "ESV" }
+        type:
+          $ref: '#/components/schemas/DevotionType'
+        depth:
+          $ref: '#/components/schemas/DevotionDepth'
+        sections:
+          $ref: '#/components/schemas/DevotionSections'
+        memoryVerseRef: { type: string, nullable: true }
+        isFavorite: { type: boolean }
+        isShared: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    GenerateDevotionRequest:
+      type: object
+      required: [passageKey, type, depth]
+      properties:
+        passageKey: { type: string, example: "ROM.8.28-39" }
+        versionCode: { type: string, default: "ESV" }
+        type:
+          $ref: '#/components/schemas/DevotionType'
+        depth:
+          $ref: '#/components/schemas/DevotionDepth'
+        themes:
+          type: array
+          items: { type: string }
+          description: Theme slugs selected during Theme Discovery (§02 §1.3)
+
+    # --- AI Bible Study Assistant™ ---------------------------------------------------------
+    AIConversation:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string, nullable: true }
+        contextPassageKey: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    AIConversationDetail:
+      allOf:
+        - $ref: '#/components/schemas/AIConversation'
+        - type: object
+          properties:
+            messages:
+              type: array
+              items:
+                $ref: '#/components/schemas/AIMessage'
+
+    AIMessage:
+      type: object
+      properties:
+        id: { type: string }
+        conversationId: { type: string }
+        role:
+          $ref: '#/components/schemas/MessageRole'
+        category:
+          allOf:
+            - $ref: '#/components/schemas/AIQuestionCategory'
+          nullable: true
+        content: { type: string }
+        citations:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              ref: { type: string, example: "John 3:16" }
+              versionCode: { type: string, example: "ESV" }
+        createdAt: { type: string, format: date-time }
+
+    # --- Prayer ---------------------------------------------------------
+    Prayer:
+      type: object
+      properties:
+        id: { type: string }
+        type:
+          $ref: '#/components/schemas/PrayerType'
+        passageKey: { type: string, nullable: true }
+        content: { type: string }
+        isFavorite: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    # --- Sermon ---------------------------------------------------------
+    Sermon:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        passageKey: { type: string }
+        audience: { type: string, nullable: true }
+        outline:
+          type: object
+          description: "{title, introduction, mainPoints[], illustrations[], application, altarCall, ...}"
+          additionalProperties: true
+        createdAt: { type: string, format: date-time }
+
+    # --- Visual Studio ---------------------------------------------------------
+    GenerateImageRequest:
+      type: object
+      required: [sourceType, style]
+      properties:
+        sourceType:
+          $ref: '#/components/schemas/ImageSourceType'
+        sourceKey: { type: string, nullable: true, description: "passageKey, storyKey, etc. (required unless sourceType=CUSTOM_PROMPT)" }
+        devotionId: { type: string, nullable: true }
+        prayerId: { type: string, nullable: true }
+        sermonId: { type: string, nullable: true }
+        style:
+          $ref: '#/components/schemas/ImageStyle'
+        userPrompt: { type: string, nullable: true }
+
+    ImageGeneration:
+      type: object
+      properties:
+        id: { type: string }
+        sourceType:
+          $ref: '#/components/schemas/ImageSourceType'
+        sourceKey: { type: string }
+        style:
+          $ref: '#/components/schemas/ImageStyle'
+        refinedPrompt: { type: string }
+        status:
+          $ref: '#/components/schemas/GenerationStatus'
+        resultUrl: { type: string, nullable: true }
+        thumbnailUrl: { type: string, nullable: true }
+        isWatermarked: { type: boolean }
+        moderationStatus:
+          $ref: '#/components/schemas/ModerationStatus'
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time, nullable: true }
+
+    BibleStoryVisualization:
+      type: object
+      properties:
+        id: { type: string }
+        storyKey: { type: string, example: "david-and-goliath" }
+        style:
+          $ref: '#/components/schemas/ImageStyle'
+        outputType: { type: string, enum: [STORYBOARD, COMIC, STORYBOOK, TEACHING_SLIDES] }
+        createdAt: { type: string, format: date-time }
+
+    BibleStoryVisualizationDetail:
+      allOf:
+        - $ref: '#/components/schemas/BibleStoryVisualization'
+        - type: object
+          properties:
+            frames:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: string }
+                  sequence: { type: integer }
+                  caption: { type: string }
+                  imageGeneration:
+                    $ref: '#/components/schemas/ImageGeneration'
+
+    MemoryVerseCard:
+      type: object
+      properties:
+        id: { type: string }
+        verseId: { type: string }
+        format:
+          $ref: '#/components/schemas/MemoryCardFormat'
+        imageGeneration:
+          $ref: '#/components/schemas/ImageGeneration'
+        createdAt: { type: string, format: date-time }
+
+    # --- Journal ---------------------------------------------------------
+    JournalEntry:
+      type: object
+      properties:
+        id: { type: string }
+        type:
+          $ref: '#/components/schemas/JournalEntryType'
+        title: { type: string, nullable: true }
+        content: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        relatedDevotionId: { type: string, nullable: true }
+        relatedPrayerId: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    PrayerRequest:
+      type: object
+      properties:
+        id: { type: string }
+        content: { type: string }
+        isAnonymous: { type: boolean }
+        isAnswered: { type: boolean }
+        answeredNote: { type: string, nullable: true }
+        answeredAt: { type: string, format: date-time, nullable: true }
+        visibility:
+          $ref: '#/components/schemas/PrayerRequestVisibility'
+        groupId: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    # --- Growth ---------------------------------------------------------
+    GrowthDashboard:
+      type: object
+      properties:
+        streaks:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                $ref: '#/components/schemas/StreakType'
+              currentStreak: { type: integer }
+              longestStreak: { type: integer }
+              lastActivityDate: { type: string, format: date }
+        stats:
+          type: object
+          properties:
+            chaptersRead: { type: integer }
+            booksCompleted: { type: integer }
+            devotionsGenerated: { type: integer }
+            memoryVersesSaved: { type: integer }
+            studyMinutes: { type: integer }
+            prayersGenerated: { type: integer }
+        recentAchievements:
+          type: array
+          items:
+            $ref: '#/components/schemas/AchievementWithProgress'
+
+    AchievementWithProgress:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        iconUrl: { type: string, nullable: true }
+        unlockedAt: { type: string, format: date-time, nullable: true }
+        progress:
+          type: object
+          nullable: true
+          properties:
+            current: { type: integer }
+            target: { type: integer }
+
+    # --- Community ---------------------------------------------------------
+    CommunityPost:
+      type: object
+      properties:
+        id: { type: string }
+        type:
+          $ref: '#/components/schemas/CommunityPostType'
+        content: { type: string }
+        moderationStatus:
+          $ref: '#/components/schemas/ModerationStatus'
+        likeCount: { type: integer }
+        commentCount: { type: integer }
+        author:
+          $ref: '#/components/schemas/User'
+        createdAt: { type: string, format: date-time }
+
+    PostComment:
+      type: object
+      properties:
+        id: { type: string }
+        postId: { type: string }
+        content: { type: string }
+        author:
+          $ref: '#/components/schemas/User'
+        createdAt: { type: string, format: date-time }
+
+    # --- Groups ---------------------------------------------------------
+    Group:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        memberCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    GroupMembership:
+      type: object
+      properties:
+        id: { type: string }
+        groupId: { type: string }
+        userId: { type: string }
+        role:
+          $ref: '#/components/schemas/GroupRole'
+        joinedAt: { type: string, format: date-time }
+
+    # --- Notifications ---------------------------------------------------------
+    Notification:
+      type: object
+      properties:
+        id: { type: string }
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        title: { type: string }
+        body: { type: string }
+        deepLink: { type: string, nullable: true, example: "faithgpt://devotion/clx1devotion0001" }
+        readAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    # --- Admin ---------------------------------------------------------
+    AIUsageSummary:
+      type: object
+      properties:
+        totalRequests: { type: integer }
+        totalCostUsdMicros: { type: integer }
+        byFeature:
+          type: array
+          items:
+            type: object
+            properties:
+              feature:
+                $ref: '#/components/schemas/AIFeature'
+              requests: { type: integer }
+              costUsdMicros: { type: integer }
+              avgLatencyMs: { type: integer }
+              errorRate: { type: number, format: float }
