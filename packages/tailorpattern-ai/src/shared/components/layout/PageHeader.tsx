@@ -3,9 +3,9 @@ import { cn } from '../../utils/cn'
 
 interface PageHeaderProps {
   title: string
-  subtitle?: string
-  actions?: ReactNode
-  className?: string
+  subtitle?: string | undefined
+  actions?: ReactNode | undefined
+  className?: string | undefined
 }
 
 export function PageHeader({ title, subtitle, actions, className }: PageHeaderProps): JSX.Element {

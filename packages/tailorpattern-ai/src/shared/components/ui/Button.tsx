@@ -5,12 +5,12 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: ButtonVariant
-  size?: ButtonSize
-  loading?: boolean
-  leftIcon?: ReactNode
-  rightIcon?: ReactNode
-  fullWidth?: boolean
+  variant?: ButtonVariant | undefined
+  size?: ButtonSize | undefined
+  loading?: boolean | undefined
+  leftIcon?: ReactNode | undefined
+  rightIcon?: ReactNode | undefined
+  fullWidth?: boolean | undefined
 }
 
 const variantClasses: Record<ButtonVariant, string> = {

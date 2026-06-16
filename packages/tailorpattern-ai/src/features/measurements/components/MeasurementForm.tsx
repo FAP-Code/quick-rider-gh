@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ChevronDown, ChevronRight } from 'lucide-react'
@@ -7,7 +7,6 @@ import { Textarea } from '../../../shared/components/ui/Textarea'
 import { Button } from '../../../shared/components/ui/Button'
 import { MeasurementField } from './MeasurementField'
 import { MeasurementFormSchema, type MeasurementFormData } from '../types/measurement.types'
-import type { MeasurementWarning } from '../types/measurement.types'
 import { MEASUREMENT_SECTIONS_MAP } from '../engine/constants'
 import { validateMeasurements } from '../engine/validation'
 

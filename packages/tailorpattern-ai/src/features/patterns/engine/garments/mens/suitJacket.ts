@@ -1,6 +1,6 @@
 import type { EngineInput, EngineOutput } from '../../types'
 import { getEaseValues, cm } from '../../types'
-import type { PatternPiece, Point } from '../../../types/pattern.types'
+import type { PatternPiece } from '../../../types/pattern.types'
 import { generateId } from '../../../../../shared/utils/uuid'
 
 // Industry-standard suit jacket block based on the Winifred Aldrich method
@@ -12,7 +12,6 @@ export function generateSuitJacket(input: EngineInput): EngineOutput {
 
   const chest = m.chest ?? 96
   const waist = m.waist ?? 80
-  const hips = m.hips ?? 100
   const shoulderW = m.shoulderWidth ?? 43
   const backLength = m.backBodyLength ?? 44
   const sleeveLen = m.sleeveLength ?? 64

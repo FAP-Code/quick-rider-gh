@@ -5,8 +5,6 @@ import {
   getPatternProjects,
   getPatternProject,
   createPatternProject,
-  updatePatternStatus,
-  deletePatternProject,
 } from '../services/patternService'
 import type { GarmentType, StyleParameters } from '../types/pattern.types'
 

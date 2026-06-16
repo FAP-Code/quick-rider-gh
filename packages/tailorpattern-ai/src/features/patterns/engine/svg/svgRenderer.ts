@@ -1,14 +1,5 @@
 import type { PatternPiece, PatternData, Point, PatternPath } from '../../types/pattern.types'
 
-const PIECE_COLORS: Record<string, string> = {
-  '#1A1A2E': '#1A1A2E',
-  '#0F3460': '#0F3460',
-  '#C9A84C': '#C9A84C',
-  '#475569': '#475569',
-  '#BFDBFE': '#BFDBFE',
-  '#78716C': '#78716C',
-}
-
 function pointsToPath(points: Point[], closed: boolean): string {
   if (points.length === 0) return ''
   const [first, ...rest] = points
@@ -24,12 +15,6 @@ function pointsToPath(points: Point[], closed: boolean): string {
 function renderGrainLine(piece: PatternPiece): string {
   if (!piece.grainLine) return ''
   const { start, end } = piece.grainLine
-  const dx = end.x - start.x
-  const dy = end.y - start.y
-  const len = Math.sqrt(dx * dx + dy * dy)
-  const ux = (dx / len) * 2
-  const uy = (dy / len) * 2
-
   return `
     <line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}"
           stroke="#64748b" stroke-width="0.5" stroke-dasharray="3,2"

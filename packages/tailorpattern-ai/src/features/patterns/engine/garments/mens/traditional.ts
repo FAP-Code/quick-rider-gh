@@ -6,14 +6,12 @@ import { generateId } from '../../../../../shared/utils/uuid'
 // Traditional West African garment construction
 // Kaftan, Senator, Agbada — largely geometric/rectangular construction
 export function generateTraditional(garmentType: string, input: EngineInput): EngineOutput {
-  const { measurements: m, params } = input
+  const { measurements: m } = input
   const warnings: string[] = []
 
   const chest = m.chest ?? 104
-  const shoulderW = m.shoulderWidth ?? 46
   const length = m.trouserOutseam ?? 130
   const neckCirc = m.neckCircumference ?? 40
-  const sleeveLen = m.sleeveLength ?? 64
 
   if (!m.chest) warnings.push('Chest measurement missing — using 104cm default for traditional wear')
 
@@ -21,7 +19,6 @@ export function generateTraditional(garmentType: string, input: EngineInput): En
   const chestEase = 16
   const bodyWidth = cm((chest + chestEase) / 2)
   const neckOpening = cm(neckCirc + 4)
-  const sleeveWidth = cm((shoulderW + 10) / 2) // wide agbada sleeve
 
   if (garmentType === 'mens-kaftan' || garmentType === 'mens-senator') {
     // Senator style — straight-cut top + matching trouser

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Edit, Plus, Ruler, Scissors, FileText, Lock } from 'lucide-react'
+import { ArrowLeft, Edit, Plus, Ruler, Scissors, FileText } from 'lucide-react'
 import { Avatar } from '../../../shared/components/ui/Avatar'
 import { Badge } from '../../../shared/components/ui/Badge'
 import { Button } from '../../../shared/components/ui/Button'

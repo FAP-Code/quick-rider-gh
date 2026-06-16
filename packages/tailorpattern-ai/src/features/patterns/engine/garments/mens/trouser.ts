@@ -5,7 +5,7 @@ import { generateId } from '../../../../../shared/utils/uuid'
 
 // Standard trouser block based on Aldrich menswear construction
 export function generateTrouser(input: EngineInput): EngineOutput {
-  const { measurements: m, params, seamAllowance: sa } = input
+  const { measurements: m, params } = input
   const ease = getEaseValues(params.easePreference ?? 'regular')
   const warnings: string[] = []
 
@@ -14,7 +14,6 @@ export function generateTrouser(input: EngineInput): EngineOutput {
   const inseam = m.trouserInseam ?? 80
   const outseam = m.trouserOutseam ?? 107
   const thigh = m.thighCircumference ?? 58
-  const knee = m.kneeCircumference ?? 40
   const ankle = m.ankleCircumference ?? 24
   const frontRise = m.frontRise ?? 28
   const backRise = m.backRise ?? 33

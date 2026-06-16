@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Plus, Users } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { PageHeader } from '../../../shared/components/layout/PageHeader'
 import { Button } from '../../../shared/components/ui/Button'
 import { Drawer } from '../../../shared/components/ui/Drawer'

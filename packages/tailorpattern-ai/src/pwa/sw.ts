@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
-import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies'
+import { NetworkFirst, CacheFirst } from 'workbox-strategies'
 import { BackgroundSyncPlugin } from 'workbox-background-sync'
 
 declare const self: ServiceWorkerGlobalScope
@@ -56,7 +56,8 @@ registerRoute(
   new NetworkFirst({
     cacheName: 'api-responses',
     networkTimeoutSeconds: 10,
-    plugins: [bgSyncPlugin],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    plugins: [bgSyncPlugin as any],
   }),
 )
 

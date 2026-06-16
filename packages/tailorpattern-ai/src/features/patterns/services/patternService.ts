@@ -44,7 +44,7 @@ export async function createPatternProject(
     measurementSetId,
     name,
     garmentType,
-    styleParameters,
+    styleParameters: styleParameters as unknown as Record<string, unknown>,
     status: 'draft',
     version: 1,
     createdAt: now,

@@ -6,8 +6,6 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '../../../shared/components/ui/Button'
-import { Input } from '../../../shared/components/ui/Input'
-import { Select } from '../../../shared/components/ui/Select'
 import { useAuth } from '../../auth/useAuth'
 import { usePWAInstall } from '../../../shared/hooks/usePWAInstall'
 

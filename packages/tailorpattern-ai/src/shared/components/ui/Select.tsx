@@ -9,11 +9,11 @@ interface SelectOption {
 }
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
-  label?: string
-  error?: string
-  hint?: string
+  label?: string | undefined
+  error?: string | undefined
+  hint?: string | undefined
   options: SelectOption[]
-  placeholder?: string
+  placeholder?: string | undefined
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(

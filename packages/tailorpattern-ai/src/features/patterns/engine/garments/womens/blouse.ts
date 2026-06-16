@@ -5,7 +5,7 @@ import { generateId } from '../../../../../shared/utils/uuid'
 
 // Women's blouse block based on Aldrich womenswear pattern cutting
 export function generateBlouse(input: EngineInput): EngineOutput {
-  const { measurements: m, params, seamAllowance: sa } = input
+  const { measurements: m, params } = input
   const ease = getEaseValues(params.easePreference ?? 'regular')
   const warnings: string[] = []
 

@@ -1,0 +1,12 @@
+[build]
+  base    = "packages/tailorpattern-ai"
+  command = "pnpm install --filter tailorpattern-ai && pnpm --filter tailorpattern-ai build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

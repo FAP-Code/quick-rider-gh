@@ -8,7 +8,7 @@ import { Input } from '../../../shared/components/ui/Input'
 import { Select } from '../../../shared/components/ui/Select'
 import { Button } from '../../../shared/components/ui/Button'
 import { useAuth } from '../../auth/useAuth'
-import type { Business, Currency, Unit } from '../../../shared/types/common.types'
+import type { Currency, Unit } from '../../../shared/types/common.types'
 
 interface SettingsFormValues {
   name: string

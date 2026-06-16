@@ -1,6 +1,5 @@
-import { Star, Copy, Ruler } from 'lucide-react'
+import { Star, Ruler } from 'lucide-react'
 import { Badge } from '../../../shared/components/ui/Badge'
-import { Button } from '../../../shared/components/ui/Button'
 import { EmptyState } from '../../../shared/components/ui/EmptyState'
 import { formatDate } from '../../../shared/utils/format'
 import { useMeasurements, useSetDefaultMeasurement } from '../hooks/useMeasurements'

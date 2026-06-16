@@ -1,4 +1,3 @@
-import { type ReactNode } from 'react'
 import { cn } from '../../../shared/utils/cn'
 import type { GarmentType } from '../types/pattern.types'
 

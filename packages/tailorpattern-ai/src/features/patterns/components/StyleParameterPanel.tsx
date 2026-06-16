@@ -33,7 +33,7 @@ export function StyleParameterPanel({
       <Select
         label="Ease Preference"
         value={value.easePreference ?? 'regular'}
-        onChange={e => update({ easePreference: e.target.value as StyleParameters['easePreference'] })}
+        onChange={e => update({ easePreference: e.target.value as 'slim' | 'regular' | 'relaxed' })}
         options={[
           { value: 'slim', label: 'Slim (minimal ease)' },
           { value: 'regular', label: 'Regular (standard ease)' },
@@ -46,7 +46,7 @@ export function StyleParameterPanel({
           <Select
             label="Lapel Style"
             value={value.lapelStyle ?? 'notch'}
-            onChange={e => update({ lapelStyle: e.target.value as StyleParameters['lapelStyle'] })}
+            onChange={e => update({ lapelStyle: e.target.value as 'notch' | 'peak' | 'shawl' })}
             options={[
               { value: 'notch', label: 'Notch Lapel (classic)' },
               { value: 'peak', label: 'Peak Lapel (formal)' },
@@ -66,7 +66,7 @@ export function StyleParameterPanel({
           <Select
             label="Jacket Length"
             value={value.jacketLength ?? 'standard'}
-            onChange={e => update({ jacketLength: e.target.value as StyleParameters['jacketLength'] })}
+            onChange={e => update({ jacketLength: e.target.value as 'short' | 'standard' | 'long' })}
             options={[
               { value: 'short', label: 'Short (+2cm above standard)' },
               { value: 'standard', label: 'Standard' },
@@ -76,7 +76,7 @@ export function StyleParameterPanel({
           <Select
             label="Vent Style"
             value={value.ventStyle ?? 'single'}
-            onChange={e => update({ ventStyle: e.target.value as StyleParameters['ventStyle'] })}
+            onChange={e => update({ ventStyle: e.target.value as 'none' | 'single' | 'double' })}
             options={[
               { value: 'none', label: 'No vent' },
               { value: 'single', label: 'Single vent' },
@@ -86,7 +86,7 @@ export function StyleParameterPanel({
           <Select
             label="Pocket Style"
             value={value.pocketStyle ?? 'flap'}
-            onChange={e => update({ pocketStyle: e.target.value as StyleParameters['pocketStyle'] })}
+            onChange={e => update({ pocketStyle: e.target.value as 'flap' | 'patch' | 'welt' | 'none' })}
             options={[
               { value: 'flap', label: 'Flap pocket' },
               { value: 'patch', label: 'Patch pocket' },
@@ -102,7 +102,7 @@ export function StyleParameterPanel({
           <Select
             label="Leg Style"
             value={value.legStyle ?? 'straight'}
-            onChange={e => update({ legStyle: e.target.value as StyleParameters['legStyle'] })}
+            onChange={e => update({ legStyle: e.target.value as 'slim' | 'straight' | 'wide' | 'tapered' })}
             options={[
               { value: 'slim', label: 'Slim fit' },
               { value: 'straight', label: 'Straight' },
@@ -113,7 +113,7 @@ export function StyleParameterPanel({
           <Select
             label="Waistband Style"
             value={value.waistbandStyle ?? 'regular'}
-            onChange={e => update({ waistbandStyle: e.target.value as StyleParameters['waistbandStyle'] })}
+            onChange={e => update({ waistbandStyle: e.target.value as 'regular' | 'high-rise' | 'low-rise' })}
             options={[
               { value: 'regular', label: 'Regular' },
               { value: 'high-rise', label: 'High-rise' },
@@ -123,7 +123,7 @@ export function StyleParameterPanel({
           <Select
             label="Pleat"
             value={value.pleat ?? 'none'}
-            onChange={e => update({ pleat: e.target.value as StyleParameters['pleat'] })}
+            onChange={e => update({ pleat: e.target.value as 'none' | 'single' | 'double' })}
             options={[
               { value: 'none', label: 'No pleat' },
               { value: 'single', label: 'Single pleat' },
@@ -137,7 +137,7 @@ export function StyleParameterPanel({
         <Select
           label="Collar Style"
           value={value.collarStyle ?? 'point'}
-          onChange={e => update({ collarStyle: e.target.value as StyleParameters['collarStyle'] })}
+          onChange={e => update({ collarStyle: e.target.value as 'point' | 'spread' | 'button-down' | 'mandarin' | 'band' })}
           options={[
             { value: 'point', label: 'Point collar' },
             { value: 'spread', label: 'Spread collar' },
@@ -151,7 +151,7 @@ export function StyleParameterPanel({
         <Select
           label="Length"
           value={value.skirtLength ?? 'knee'}
-          onChange={e => update({ skirtLength: e.target.value as StyleParameters['skirtLength'] })}
+          onChange={e => update({ skirtLength: e.target.value as 'mini' | 'knee' | 'midi' | 'maxi' })}
           options={[
             { value: 'mini', label: 'Mini (above knee)' },
             { value: 'knee', label: 'Knee length' },

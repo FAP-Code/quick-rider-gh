@@ -1,5 +1,5 @@
 import type { MeasurementData } from '../../measurements/types/measurement.types'
-import type { StyleParameters, PatternPiece, GarmentType } from '../types/pattern.types'
+import type { StyleParameters, PatternPiece } from '../types/pattern.types'
 
 export interface EngineInput {
   measurements: MeasurementData

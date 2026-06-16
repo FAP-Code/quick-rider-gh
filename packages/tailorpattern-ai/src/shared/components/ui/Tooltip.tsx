@@ -4,8 +4,8 @@ import { cn } from '../../utils/cn'
 interface TooltipProps {
   content: ReactNode
   children: ReactNode
-  position?: 'top' | 'bottom' | 'left' | 'right'
-  className?: string
+  position?: 'top' | 'bottom' | 'left' | 'right' | undefined
+  className?: string | undefined
 }
 
 export function Tooltip({ content, children, position = 'top', className }: TooltipProps): JSX.Element {

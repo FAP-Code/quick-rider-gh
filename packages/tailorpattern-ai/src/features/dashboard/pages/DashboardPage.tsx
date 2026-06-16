@@ -4,14 +4,12 @@ import { Users, Scissors, Plus, TrendingUp, FileWarning } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Card, CardHeader, CardTitle } from '../../../shared/components/ui/Card'
 import { Button } from '../../../shared/components/ui/Button'
-import { Badge } from '../../../shared/components/ui/Badge'
 import { Skeleton } from '../../../shared/components/ui/Skeleton'
 import { PatternProjectCard } from '../../patterns/components/PatternProjectCard'
 import { usePatternProjects } from '../../patterns/hooks/usePatternProjects'
 import { useCustomers } from '../../customers/hooks/useCustomers'
 import { useAuth } from '../../auth/useAuth'
 import { getPendingCount } from '../../../shared/sync/syncQueue'
-import { formatRelativeTime } from '../../../shared/utils/format'
 
 interface StatCardProps {
   label: string
@@ -44,7 +42,7 @@ export function DashboardPage(): JSX.Element {
   const navigate = useNavigate()
   const { business } = useAuth()
   const { data: patterns, isLoading: patternsLoading } = usePatternProjects()
-  const { data: customers, isLoading: customersLoading } = useCustomers()
+  const { data: customers } = useCustomers()
   const [pendingSync, setPendingSync] = useState(0)
 
   useEffect(() => {

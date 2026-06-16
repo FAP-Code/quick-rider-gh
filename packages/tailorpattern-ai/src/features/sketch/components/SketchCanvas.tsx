@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 import { SketchToolbar } from './SketchToolbar'
 import { useSketchCanvas } from '../hooks/useSketchCanvas'
 import { cn } from '../../../shared/utils/cn'

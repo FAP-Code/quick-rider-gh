@@ -9,7 +9,7 @@ interface MeasurementFieldProps {
   value: number | undefined
   unit: 'cm' | 'inches'
   onChange: (value: number | undefined) => void
-  warning?: string
+  warning?: string | undefined
 }
 
 export function MeasurementField({

@@ -1,10 +1,9 @@
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Input } from '../../../shared/components/ui/Input'
 import { Textarea } from '../../../shared/components/ui/Textarea'
 import { Button } from '../../../shared/components/ui/Button'
 import { CustomerFormSchema, type CustomerFormData } from '../types/customer.types'
-import type { Customer } from '../types/customer.types'
 
 interface CustomerFormProps {
   defaultValues?: Partial<CustomerFormData>

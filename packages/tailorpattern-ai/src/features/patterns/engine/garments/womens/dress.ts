@@ -4,8 +4,8 @@ import type { PatternPiece } from '../../../types/pattern.types'
 import { generateId } from '../../../../../shared/utils/uuid'
 
 // Women's dress blocks: Shift, Fit-and-Flare, Wrap
-export function generateDress(garmentType: string, input: EngineInput): EngineOutput {
-  const { measurements: m, params, seamAllowance: sa } = input
+export function generateDress(_garmentType: string, input: EngineInput): EngineOutput {
+  const { measurements: m, params } = input
   const ease = getEaseValues(params.easePreference ?? 'regular')
   const warnings: string[] = []
 
@@ -16,7 +16,6 @@ export function generateDress(garmentType: string, input: EngineInput): EngineOu
   const backLength = m.backBodyLength ?? 40
   const waistToHip = m.waistToHip ?? 20
   const neckCirc = m.neckCircumference ?? 36
-  const sleeveLen = m.sleeveLength ?? 58
 
   if (!m.chest) warnings.push('Bust measurement missing — using 88cm default')
 

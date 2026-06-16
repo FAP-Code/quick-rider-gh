@@ -5,12 +5,11 @@ import { generateId } from '../../../../../shared/utils/uuid'
 
 // Standard shirt block based on Aldrich menswear shirt block
 export function generateShirt(input: EngineInput): EngineOutput {
-  const { measurements: m, params, seamAllowance: sa } = input
+  const { measurements: m, params } = input
   const ease = getEaseValues(params.easePreference ?? 'regular')
   const warnings: string[] = []
 
   const chest = m.chest ?? 96
-  const waist = m.waist ?? 80
   const neckCirc = m.neckCircumference ?? 38
   const shoulderW = m.shoulderWidth ?? 43
   const backLength = m.backBodyLength ?? 44

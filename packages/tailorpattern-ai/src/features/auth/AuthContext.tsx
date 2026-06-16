@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { db } from '../../shared/db'
-import { generateId, nowISO } from '../../shared/utils/uuid'
+import { nowISO } from '../../shared/utils/uuid'
 import { DEFAULT_BUSINESS_SETTINGS } from '../../shared/types/common.types'
 import type { AuthContextValue, AuthUser } from './types'
 import type { Business } from '../../shared/types/common.types'

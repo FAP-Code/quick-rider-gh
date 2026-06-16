@@ -1,4 +1,4 @@
-import type { PatternPiece as PatternPieceType, PatternPath, Point } from '../types/pattern.types'
+import type { PatternPiece as PatternPieceType, Point } from '../types/pattern.types'
 
 function pointsToD(points: Point[], closed: boolean): string {
   if (!points.length) return ''

@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 // API client layer — no-op in Phase 1 (offline-first / IndexedDB only)
 // Activated when cloud sync is introduced in Phase 3
 // All service files route through this client so the switch is seamless
@@ -35,7 +36,7 @@ export class ApiClient {
           ...(this.authToken ? { Authorization: `Bearer ${this.authToken}` } : {}),
           ...options.headers,
         },
-        body: options.body ? JSON.stringify(options.body) : undefined,
+        body: options.body !== undefined ? JSON.stringify(options.body) : null,
         signal: controller.signal,
       })
 

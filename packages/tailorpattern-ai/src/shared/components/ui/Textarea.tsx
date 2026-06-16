@@ -2,9 +2,9 @@ import { forwardRef, type TextareaHTMLAttributes } from 'react'
 import { cn } from '../../utils/cn'
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
-  label?: string
-  error?: string
-  hint?: string
+  label?: string | undefined
+  error?: string | undefined
+  hint?: string | undefined
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(

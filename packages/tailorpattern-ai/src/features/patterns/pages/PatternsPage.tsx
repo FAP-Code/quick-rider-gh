@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Plus, Scissors } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '../../../shared/components/layout/PageHeader'

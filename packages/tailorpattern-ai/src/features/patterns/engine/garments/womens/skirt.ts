@@ -5,7 +5,7 @@ import { generateId } from '../../../../../shared/utils/uuid'
 
 // Women's skirt blocks: A-line, Straight, Flared
 export function generateSkirt(garmentType: string, input: EngineInput): EngineOutput {
-  const { measurements: m, params, seamAllowance: sa } = input
+  const { measurements: m, params } = input
   const ease = getEaseValues(params.easePreference ?? 'regular')
   const warnings: string[] = []
 
@@ -18,7 +18,6 @@ export function generateSkirt(garmentType: string, input: EngineInput): EngineOu
 
   const waistH = cm((waist + ease.waist) / 4)
   const hipH = cm((hips + ease.hips) / 4)
-  const hipToHem = skirtLength - waistToHip
 
   if (!m.waist) warnings.push('Waist missing — using 70cm default')
 

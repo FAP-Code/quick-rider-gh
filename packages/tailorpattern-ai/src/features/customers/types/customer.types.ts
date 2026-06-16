@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { BaseEntity, SoftDeletable } from '../../../shared/types/common.types'
 
 export const CustomerSchema = z.object({
   id: z.string().uuid(),

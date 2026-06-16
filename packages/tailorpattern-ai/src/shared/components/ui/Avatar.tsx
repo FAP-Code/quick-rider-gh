@@ -4,8 +4,8 @@ import { initials } from '../../utils/format'
 
 interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
   name: string
-  photoUrl?: string
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  photoUrl?: string | undefined
+  size?: 'sm' | 'md' | 'lg' | 'xl' | undefined
 }
 
 const sizeClasses = {
