@@ -1,7 +1,7 @@
 [build]
   base    = "packages/tailorpattern-ai"
-  command = "pnpm install --filter tailorpattern-ai && pnpm --filter tailorpattern-ai build"
-  publish = "dist"
+  command = "pnpm install && pnpm run build"
+  publish = "packages/tailorpattern-ai/dist"
 
 [build.environment]
   NODE_VERSION = "20"
