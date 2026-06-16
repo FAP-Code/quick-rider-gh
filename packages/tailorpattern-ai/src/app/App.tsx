@@ -23,9 +23,13 @@ export function App(): JSX.Element {
                     background: '#1A1A2E',
                     color: '#fff',
                     fontSize: '14px',
+                    fontFamily: 'Inter, sans-serif',
                   },
                   success: {
                     iconTheme: { primary: '#C9A84C', secondary: '#1A1A2E' },
+                  },
+                  error: {
+                    iconTheme: { primary: '#EF4444', secondary: '#fff' },
                   },
                 }}
               />

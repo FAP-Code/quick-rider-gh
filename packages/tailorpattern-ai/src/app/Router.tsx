@@ -3,8 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AppShell } from '../shared/components/layout/AppShell'
 import { ErrorBoundary } from '../shared/components/feedback/ErrorBoundary'
 import { PatternCardSkeleton } from '../shared/components/ui/Skeleton'
+import { useOnboardingGuard } from '../shared/hooks/useOnboardingGuard'
+import { useAuth } from '../features/auth/useAuth'
 
-// Lazy load all route-level components for code splitting
 const DashboardPage = lazy(() =>
   import('../features/dashboard/pages/DashboardPage').then(m => ({ default: m.DashboardPage }))
 )
@@ -43,36 +44,58 @@ function PageLoader(): JSX.Element {
   )
 }
 
+function GuardedApp(): JSX.Element {
+  useOnboardingGuard()
+  const { isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-brand-dark flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-brand-gold flex items-center justify-center">
+            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
+              <path d="M4 6L12 4L20 6L20 14Q20 20 12 22Q4 20 4 14Z" stroke="white" strokeWidth="1.5" />
+            </svg>
+          </div>
+          <div className="animate-spin w-5 h-5 border-2 border-brand-gold border-t-transparent rounded-full" />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <AppShell>
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/customers/:id" element={<CustomerDetailPage />} />
+            <Route path="/measurements/new/:customerId" element={<MeasurementFormPage />} />
+            <Route path="/patterns" element={<PatternsPage />} />
+            <Route path="/patterns/new" element={<PatternNewPage />} />
+            <Route path="/patterns/:id" element={<PatternDetailPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
+    </AppShell>
+  )
+}
+
 export function Router(): JSX.Element {
   return (
     <Routes>
-      <Route path="/onboarding" element={<Suspense fallback={<PageLoader />}><OnboardingPage /></Suspense>} />
-
       <Route
-        path="/*"
+        path="/onboarding"
         element={
-          <AppShell>
-            <ErrorBoundary>
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route path="/" element={<DashboardPage />} />
-                  <Route path="/customers" element={<CustomersPage />} />
-                  <Route path="/customers/:id" element={<CustomerDetailPage />} />
-                  <Route
-                    path="/measurements/new/:customerId"
-                    element={<MeasurementFormPage />}
-                  />
-                  <Route path="/patterns" element={<PatternsPage />} />
-                  <Route path="/patterns/new" element={<PatternNewPage />} />
-                  <Route path="/patterns/:id" element={<PatternDetailPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
-            </ErrorBoundary>
-          </AppShell>
+          <Suspense fallback={<PageLoader />}>
+            <OnboardingPage />
+          </Suspense>
         }
       />
+      <Route path="/*" element={<GuardedApp />} />
     </Routes>
   )
 }

@@ -1,9 +1,9 @@
-import { createContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { db } from '../../shared/db'
 import { generateId, nowISO } from '../../shared/utils/uuid'
+import { DEFAULT_BUSINESS_SETTINGS } from '../../shared/types/common.types'
 import type { AuthContextValue, AuthUser } from './types'
 import type { Business } from '../../shared/types/common.types'
-import { DEFAULT_BUSINESS_SETTINGS } from '../../shared/types/common.types'
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
@@ -40,37 +40,25 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
         }
         await db.businesses.add(biz)
       }
-      setBusiness(biz)
-      // Sync Phase1 user name from business
       PHASE1_USER.name = biz.ownerName
       PHASE1_USER.email = biz.email
+      setBusiness(biz)
       setIsLoading(false)
     }
     void init()
   }, [])
 
-  const updateBusiness = async (updates: Partial<Business>): Promise<void> => {
+  const updateBusiness = useCallback(async (updates: Partial<Business>): Promise<void> => {
+    if (!business) return
     const updated: Business = {
-      ...(business ?? {
-        id: PHASE1_BUSINESS_ID,
-        name: '',
-        ownerName: '',
-        email: '',
-        currency: 'GBP',
-        country: 'GB',
-        subscriptionTier: 'starter' as const,
-        settings: DEFAULT_BUSINESS_SETTINGS,
-        onboardingCompleted: false,
-        createdAt: nowISO(),
-        updatedAt: nowISO(),
-      }),
+      ...business,
       ...updates,
       id: PHASE1_BUSINESS_ID,
       updatedAt: nowISO(),
     }
     await db.businesses.put(updated)
     setBusiness(updated)
-  }
+  }, [business])
 
   return (
     <AuthContext.Provider
