@@ -5,6 +5,7 @@ import {
   Ruler,
   Scissors,
   Wand2,
+  Pencil,
   Settings,
   ShoppingBag,
   DollarSign,
@@ -25,7 +26,7 @@ export interface PlatformModule {
   label: string
   Icon: LucideIcon
   path: string
-  description?: string
+  description?: string | undefined
 }
 
 export const PLATFORM_MODULES: PlatformModule[] = [
@@ -68,6 +69,14 @@ export const PLATFORM_MODULES: PlatformModule[] = [
     label: 'Pattern Generator',
     Icon: Wand2,
     path: '/patterns/new',
+  },
+  {
+    id: 'sketch',
+    phase: 1,
+    status: 'active',
+    label: 'Sketch Pad',
+    Icon: Pencil,
+    path: '/sketch',
   },
   {
     id: 'settings',

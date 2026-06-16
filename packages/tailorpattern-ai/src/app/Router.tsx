@@ -27,6 +27,9 @@ const PatternNewPage = lazy(() =>
 const PatternDetailPage = lazy(() =>
   import('../features/patterns/pages/PatternDetailPage').then(m => ({ default: m.PatternDetailPage }))
 )
+const SketchPage = lazy(() =>
+  import('../features/sketch/pages/SketchPage').then(m => ({ default: m.SketchPage }))
+)
 const SettingsPage = lazy(() =>
   import('../features/settings/pages/SettingsPage').then(m => ({ default: m.SettingsPage }))
 )
@@ -71,10 +74,12 @@ function GuardedApp(): JSX.Element {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/customers/:id" element={<CustomerDetailPage />} />
+            <Route path="/measurements" element={<Navigate to="/customers" replace />} />
             <Route path="/measurements/new/:customerId" element={<MeasurementFormPage />} />
             <Route path="/patterns" element={<PatternsPage />} />
             <Route path="/patterns/new" element={<PatternNewPage />} />
             <Route path="/patterns/:id" element={<PatternDetailPage />} />
+            <Route path="/sketch" element={<SketchPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

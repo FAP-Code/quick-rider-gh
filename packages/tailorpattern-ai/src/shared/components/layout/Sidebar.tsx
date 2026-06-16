@@ -5,6 +5,7 @@ import {
   Ruler,
   Scissors,
   Wand2,
+  Pencil,
   Settings,
   Lock,
   ShoppingBag,
@@ -29,6 +30,7 @@ const ACTIVE_ICONS: Record<string, typeof LayoutDashboard> = {
   measurements: Ruler,
   patterns: Scissors,
   generator: Wand2,
+  sketch: Pencil,
   settings: Settings,
   orders: ShoppingBag,
   finance: DollarSign,
@@ -56,7 +58,7 @@ export function Sidebar(): JSX.Element {
           </div>
           <div>
             <p className="text-sm font-bold leading-none">TailorPattern AI</p>
-            <p className="text-[10px] text-white/50 mt-0.5">The Tailor’s Friend™</p>
+            <p className="text-[10px] text-white/50 mt-0.5">The Tailor's Friend™</p>
           </div>
         </div>
       </div>

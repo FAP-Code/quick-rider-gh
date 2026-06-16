@@ -57,11 +57,15 @@ export function generateChildrensGarment(garmentType: string, input: EngineInput
         { position: { x: bodyW, y: bodyLength * 0.8 }, label: `Chest: ${chest}cm` },
       ],
     }
+    // Destructure to exclude foldLine — front is cut in pairs, needs no fold line
+    const { foldLine: _f, ...backBase } = back
     const front: PatternPiece = {
-      ...back,
-      id: generateId(), name: 'Front (Children)',
-      color: '#0F3460', quantity: 2, mirror: true,
-      foldLine: undefined,
+      ...backBase,
+      id: generateId(),
+      name: 'Front (Children)',
+      color: '#0F3460',
+      quantity: 2,
+      mirror: true,
       annotations: [{ position: { x: bodyW, y: bodyLength / 2 }, label: `FRONT Age ${age}` }],
     }
     const sleeve: PatternPiece = {
@@ -83,6 +87,55 @@ export function generateChildrensGarment(garmentType: string, input: EngineInput
     return { pieces: [back, front, sleeve], warnings }
   }
 
+  // Children's dress — bodice + gathered skirt
+  if (garmentType === 'childrens-dress') {
+    const bodiceBack: PatternPiece = {
+      id: generateId(), name: 'Bodice Back (Children)',
+      color: '#1A1A2E', quantity: 1, mirror: false,
+      outline: {
+        isClosed: true, isSeamLine: false,
+        points: [
+          { x: 0, y: 0 },
+          { x: neckW, y: -1.5 },
+          { x: cm(bodyW + 1), y: -(armholeD * 0.05) },
+          { x: cm(bodyW + 2), y: armholeD },
+          { x: cm(bodyW + 2), y: bodyLength },
+          { x: 0, y: bodyLength },
+        ],
+      },
+      foldLine: { isClosed: false, isFoldLine: true, points: [{ x: 0, y: 0 }, { x: 0, y: bodyLength }] },
+      grainLine: { start: { x: 1, y: 5 }, end: { x: 1, y: bodyLength - 3 } },
+      annotations: [{ position: { x: bodyW, y: bodyLength / 2 }, label: `BODICE BACK Age ${age}` }],
+    }
+    const { foldLine: _fb, ...bodiceBackBase } = bodiceBack
+    const bodiceFront: PatternPiece = {
+      ...bodiceBackBase,
+      id: generateId(),
+      name: 'Bodice Front (Children)',
+      color: '#0F3460',
+      quantity: 2,
+      mirror: true,
+      annotations: [{ position: { x: bodyW, y: bodyLength / 2 }, label: `BODICE FRONT Age ${age}` }],
+    }
+    const skirtLength = cm(height * 0.38)
+    const skirt: PatternPiece = {
+      id: generateId(), name: 'Skirt (Children)',
+      color: '#C9A84C', quantity: 2, mirror: false,
+      outline: {
+        isClosed: true, isSeamLine: false,
+        points: [
+          { x: 0, y: 0 },
+          { x: cm((chest + ease) / 2 * 1.5), y: 0 },
+          { x: cm((chest + ease) / 2 * 1.5), y: skirtLength },
+          { x: 0, y: skirtLength },
+        ],
+      },
+      grainLine: { start: { x: cm((chest + ease) / 4), y: 5 }, end: { x: cm((chest + ease) / 4), y: skirtLength - 5 } },
+      annotations: [{ position: { x: cm((chest + ease) / 4), y: skirtLength / 2 }, label: `SKIRT (Children) Age ${age}` }],
+    }
+    return { pieces: [bodiceBack, bodiceFront, skirt], warnings }
+  }
+
   // Children's trouser — simplified
   const trouserFront: PatternPiece = {
     id: generateId(), name: 'Front Trouser (Children)',
@@ -101,6 +154,13 @@ export function generateChildrensGarment(garmentType: string, input: EngineInput
     grainLine: { start: { x: cm((chest + 10) / 8), y: 5 }, end: { x: cm((chest + 10) / 8), y: cm(height * 0.6) } },
     annotations: [{ position: { x: cm((chest + 10) / 8), y: cm(height * 0.3) }, label: `FRONT TROUSER Age ${age}` }],
   }
+  const trouserBack: PatternPiece = {
+    ...trouserFront,
+    id: generateId(),
+    name: 'Back Trouser (Children)',
+    color: '#0F3460',
+    annotations: [{ position: { x: cm((chest + 10) / 8), y: cm(height * 0.3) }, label: `BACK TROUSER Age ${age}` }],
+  }
 
-  return { pieces: [trouserFront, { ...trouserFront, id: generateId(), name: 'Back Trouser (Children)', color: '#0F3460', annotations: [{ position: { x: cm((chest + 10) / 8), y: cm(height * 0.3) }, label: `BACK TROUSER Age ${age}` }] }], warnings }
+  return { pieces: [trouserFront, trouserBack], warnings }
 }

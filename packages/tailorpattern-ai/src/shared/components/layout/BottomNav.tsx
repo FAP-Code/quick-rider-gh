@@ -1,13 +1,13 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Scissors, Wand2, MoreHorizontal } from 'lucide-react'
+import { LayoutDashboard, Users, Scissors, Pencil, Settings } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
 const PRIMARY_NAV = [
   { path: '/', label: 'Dashboard', Icon: LayoutDashboard, exact: true },
   { path: '/customers', label: 'Customers', Icon: Users, exact: false },
   { path: '/patterns', label: 'Patterns', Icon: Scissors, exact: false },
-  { path: '/patterns/new', label: 'Generate', Icon: Wand2, exact: false },
-  { path: '/more', label: 'More', Icon: MoreHorizontal, exact: false },
+  { path: '/sketch', label: 'Sketch', Icon: Pencil, exact: false },
+  { path: '/settings', label: 'Settings', Icon: Settings, exact: false },
 ]
 
 export function BottomNav(): JSX.Element {
