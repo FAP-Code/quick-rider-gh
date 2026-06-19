@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import {
   LayoutDashboard,
   Users,
@@ -46,11 +47,11 @@ export function Sidebar(): JSX.Element {
   const { isInstallable, isInstalled, install } = usePWAInstall()
 
   return (
-    <aside className="hidden lg:flex flex-col w-[260px] bg-brand-navy text-white h-screen fixed left-0 top-0 z-30">
+    <aside className="hidden lg:flex flex-col w-[260px] bg-gradient-to-b from-brand-navy to-brand-dark text-white h-screen fixed left-0 top-0 z-30">
       {/* Brand */}
       <div className="px-5 py-5 border-b border-white/10">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-brand-gold flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-gold to-brand-gold-light flex items-center justify-center flex-shrink-0 shadow-sm">
             <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none">
               <path d="M4 5 L10 3 L16 5 L16 11 Q16 17 10 19 Q4 17 4 11 Z" stroke="white" strokeWidth="1.5" />
               <path d="M7 10 L9 12 L13 8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -92,15 +93,26 @@ export function Sidebar(): JSX.Element {
                 end={mod.path === '/'}
                 className={({ isActive: active }) =>
                   cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+                    'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
                     active
                       ? 'bg-white/15 text-white'
-                      : 'text-white/70 hover:bg-white/8 hover:text-white',
+                      : 'text-white/70 hover:bg-white/8 hover:text-white hover:translate-x-0.5',
                   )
                 }
               >
-                <Icon size={17} />
-                <span>{mod.label}</span>
+                {({ isActive: active }) => (
+                  <>
+                    {active && (
+                      <motion.span
+                        layoutId="sidebar-active-bar"
+                        className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-brand-gold"
+                        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                      />
+                    )}
+                    <Icon size={17} />
+                    <span>{mod.label}</span>
+                  </>
+                )}
               </NavLink>
             )
           })}

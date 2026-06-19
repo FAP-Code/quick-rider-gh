@@ -33,10 +33,11 @@ export function PatternProjectCard({
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.04, duration: 0.2 }}
       onClick={() => navigate(`/patterns/${project.id}`)}
-      className="bg-white rounded-2xl border border-surface-muted p-4 cursor-pointer transition-shadow duration-150 hover:shadow-card-hover active:scale-[0.99]"
+      whileHover={{ y: -2 }}
+      className="bg-white rounded-2xl border border-surface-muted p-4 cursor-pointer transition-shadow duration-200 hover:shadow-card-hover active:scale-[0.99]"
     >
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-xl bg-brand-gold/10 flex items-center justify-center flex-shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-gold/15 to-brand-gold/5 flex items-center justify-center flex-shrink-0">
           <Scissors size={16} className="text-brand-gold" />
         </div>
         <div className="flex-1 min-w-0">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Scissors, Plus, TrendingUp, FileWarning } from 'lucide-react'
+import { Users, Scissors, Plus, TrendingUp, FileWarning, Zap, ArrowUpRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Card, CardHeader, CardTitle } from '../../../shared/components/ui/Card'
 import { Button } from '../../../shared/components/ui/Button'
@@ -15,21 +15,22 @@ interface StatCardProps {
   label: string
   value: number | string
   icon: typeof Users
-  color: string
+  gradient: string
   index: number
 }
 
-function StatCard({ label, value, icon: Icon, color, index }: StatCardProps): JSX.Element {
+function StatCard({ label, value, icon: Icon, gradient, index }: StatCardProps): JSX.Element {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.3 }}
-      className="bg-white rounded-2xl border border-surface-muted p-4"
+      whileHover={{ y: -2 }}
+      className="bg-white rounded-2xl border border-surface-muted p-4 shadow-card transition-shadow duration-200 hover:shadow-card-hover"
     >
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-medium text-text-muted">{label}</p>
-        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${color}`}>
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br ${gradient} shadow-sm`}>
           <Icon size={16} className="text-white" />
         </div>
       </div>
@@ -61,13 +62,36 @@ export function DashboardPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      {/* Greeting */}
-      <div>
-        <h1 className="text-xl font-bold text-text-primary">
-          Hello, {business?.ownerName ?? 'there'} 👋
-        </h1>
-        <p className="text-sm text-text-muted mt-0.5">{business?.name}</p>
-      </div>
+      {/* Hero */}
+      <motion.div
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-navy via-brand-navy to-brand-mid px-5 py-6 sm:px-7 sm:py-8 text-white shadow-card"
+      >
+        <div className="absolute -right-10 -top-10 w-44 h-44 rounded-full bg-brand-gold/10 blur-2xl" />
+        <div className="absolute -bottom-12 -left-8 w-40 h-40 rounded-full bg-white/5 blur-2xl" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold">
+              Hello, {business?.ownerName ?? 'there'} 👋
+            </h1>
+            <p className="text-sm text-white/60 mt-1">{business?.name}</p>
+            <p className="text-xs text-white/40 mt-3 max-w-sm">
+              Here&rsquo;s what&rsquo;s happening with your patterns and customers today.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="gold"
+            onClick={() => navigate('/patterns/new')}
+            leftIcon={<Plus size={15} />}
+            className="flex-shrink-0"
+          >
+            New Pattern
+          </Button>
+        </div>
+      </motion.div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -75,28 +99,28 @@ export function DashboardPage(): JSX.Element {
           label="Total Customers"
           value={customers?.length ?? 0}
           icon={Users}
-          color="bg-brand-navy"
+          gradient="from-brand-navy to-brand-dark"
           index={0}
         />
         <StatCard
           label="Active Patterns"
           value={activePatterns.length}
           icon={Scissors}
-          color="bg-brand-mid"
+          gradient="from-brand-mid to-brand-navy"
           index={1}
         />
         <StatCard
           label="This Month"
           value={thisMonth.length}
           icon={TrendingUp}
-          color="bg-brand-gold"
+          gradient="from-brand-gold to-brand-gold-light"
           index={2}
         />
         <StatCard
           label="Drafts Pending"
           value={drafts.length}
           icon={FileWarning}
-          color="bg-amber-500"
+          gradient="from-amber-500 to-amber-400"
           index={3}
         />
       </div>
@@ -106,20 +130,33 @@ export function DashboardPage(): JSX.Element {
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
-        <div className="flex gap-2 flex-wrap">
-          <Button
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
             onClick={() => navigate('/patterns/new')}
-            leftIcon={<Plus size={16} />}
+            className="flex items-center gap-3 p-3.5 rounded-xl border border-surface-muted bg-gradient-to-br from-brand-gold/8 to-transparent hover:border-brand-gold/40 hover:shadow-card-hover transition-all duration-200 text-left group"
           >
-            New Pattern
-          </Button>
-          <Button
+            <div className="w-9 h-9 rounded-xl bg-brand-gold/15 flex items-center justify-center flex-shrink-0 group-hover:bg-brand-gold/25 transition-colors">
+              <Zap size={16} className="text-brand-gold" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-text-primary">New Pattern</p>
+              <p className="text-xs text-text-muted">Generate a pattern in minutes</p>
+            </div>
+            <ArrowUpRight size={15} className="text-text-muted group-hover:text-brand-gold transition-colors flex-shrink-0" />
+          </button>
+          <button
             onClick={() => navigate('/customers')}
-            variant="secondary"
-            leftIcon={<Users size={16} />}
+            className="flex items-center gap-3 p-3.5 rounded-xl border border-surface-muted bg-gradient-to-br from-brand-navy/5 to-transparent hover:border-brand-navy/30 hover:shadow-card-hover transition-all duration-200 text-left group"
           >
-            Add Customer
-          </Button>
+            <div className="w-9 h-9 rounded-xl bg-brand-navy/10 flex items-center justify-center flex-shrink-0 group-hover:bg-brand-navy/20 transition-colors">
+              <Users size={16} className="text-brand-navy" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-text-primary">Add Customer</p>
+              <p className="text-xs text-text-muted">Save a new client profile</p>
+            </div>
+            <ArrowUpRight size={15} className="text-text-muted group-hover:text-brand-navy transition-colors flex-shrink-0" />
+          </button>
         </div>
       </Card>
 
@@ -129,7 +166,7 @@ export function DashboardPage(): JSX.Element {
           <h2 className="text-base font-semibold text-text-primary">Recent Patterns</h2>
           <button
             onClick={() => navigate('/patterns')}
-            className="text-xs text-brand-mid hover:underline"
+            className="text-xs font-medium text-brand-mid hover:text-brand-gold transition-colors"
           >
             View all
           </button>
