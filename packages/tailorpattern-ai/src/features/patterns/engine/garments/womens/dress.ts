@@ -1,11 +1,12 @@
 import type { EngineInput, EngineOutput } from '../../types'
 import { getEaseValues, cm } from '../../types'
-import type { PatternPiece } from '../../../types/pattern.types'
+import type { PatternPiece, PatternPath } from '../../../types/pattern.types'
 import { generateId } from '../../../../../shared/utils/uuid'
+import { buildSeamLine, edgeNotch } from '../../utils/seamAllowance'
 
 // Women's dress blocks: Shift, Fit-and-Flare, Wrap
 export function generateDress(_garmentType: string, input: EngineInput): EngineOutput {
-  const { measurements: m, params } = input
+  const { measurements: m, params, seamAllowance: sa } = input
   const ease = getEaseValues(params.easePreference ?? 'regular')
   const warnings: string[] = []
 
@@ -31,25 +32,27 @@ export function generateDress(_garmentType: string, input: EngineInput): EngineO
   const hipW = cm((hips + ease.hips) / 4)
   const waistW = cm((waist + ease.waist) / 4)
 
+  const backOutline: PatternPath = {
+    isClosed: true, isSeamLine: false,
+    points: [
+      { x: 0, y: 0 },
+      { x: neckW, y: -2 },
+      { x: backShoulderW, y: -(armholeDepth * 0.05) },
+      { x: backBustW, y: armholeDepth },
+      { x: waistW, y: backLength },
+      { x: hipW, y: backLength + waistToHip },
+      { x: hipW, y: dressLength },
+      { x: 0, y: dressLength },
+    ],
+  }
   const backPiece: PatternPiece = {
     id: generateId(),
     name: 'Back Dress',
     color: '#1A1A2E',
     quantity: 1,
     mirror: false,
-    outline: {
-      isClosed: true, isSeamLine: false,
-      points: [
-        { x: 0, y: 0 },
-        { x: neckW, y: -2 },
-        { x: backShoulderW, y: -(armholeDepth * 0.05) },
-        { x: backBustW, y: armholeDepth },
-        { x: waistW, y: backLength },
-        { x: hipW, y: backLength + waistToHip },
-        { x: hipW, y: dressLength },
-        { x: 0, y: dressLength },
-      ],
-    },
+    outline: backOutline,
+    seamLine: buildSeamLine(backOutline, sa),
     grainLine: { start: { x: 1, y: 5 }, end: { x: 1, y: dressLength - 5 } },
     foldLine: { isClosed: false, isFoldLine: true, points: [{ x: 0, y: 0 }, { x: 0, y: dressLength }] },
     darts: [
@@ -60,28 +63,32 @@ export function generateDress(_garmentType: string, input: EngineInput): EngineO
         depth: 1.5,
       },
     ],
+    notches: [edgeNotch(backOutline.points, 3, 0), edgeNotch(backOutline.points, 4, 0)],
     annotations: [{ position: { x: hipW / 2, y: dressLength / 2 }, label: 'BACK (FOLD)' }],
+    keyMeasurements: [`Bust: ${bust}cm`, `Hips: ${hips}cm`, `Length: ${dressLength}cm`],
   }
 
+  const frontOutline: PatternPath = {
+    isClosed: true, isSeamLine: false,
+    points: [
+      { x: 0, y: 0 },
+      { x: neckW, y: -(neckCirc / 5 + 2) },
+      { x: backShoulderW - 0.5, y: -(armholeDepth * 0.1) },
+      { x: frontBustW, y: armholeDepth },
+      { x: waistW - 0.5, y: backLength },
+      { x: hipW, y: backLength + waistToHip },
+      { x: hipW, y: dressLength },
+      { x: 0, y: dressLength },
+    ],
+  }
   const frontPiece: PatternPiece = {
     id: generateId(),
     name: 'Front Dress',
     color: '#0F3460',
     quantity: 2,
     mirror: true,
-    outline: {
-      isClosed: true, isSeamLine: false,
-      points: [
-        { x: 0, y: 0 },
-        { x: neckW, y: -(neckCirc / 5 + 2) },
-        { x: backShoulderW - 0.5, y: -(armholeDepth * 0.1) },
-        { x: frontBustW, y: armholeDepth },
-        { x: waistW - 0.5, y: backLength },
-        { x: hipW, y: backLength + waistToHip },
-        { x: hipW, y: dressLength },
-        { x: 0, y: dressLength },
-      ],
-    },
+    outline: frontOutline,
+    seamLine: buildSeamLine(frontOutline, sa),
     grainLine: { start: { x: hipW / 2, y: 5 }, end: { x: hipW / 2, y: dressLength - 5 } },
     darts: [
       {
@@ -91,7 +98,9 @@ export function generateDress(_garmentType: string, input: EngineInput): EngineO
         depth: cm((bust - waist) * 0.04),
       },
     ],
+    notches: [edgeNotch(frontOutline.points, 3, 0), edgeNotch(frontOutline.points, 4, 0)],
     annotations: [{ position: { x: hipW / 2, y: dressLength / 2 }, label: 'FRONT' }],
+    keyMeasurements: [`Bust: ${bust}cm`, `Waist: ${waist}cm`],
   }
 
   return { pieces: [backPiece, frontPiece], warnings }

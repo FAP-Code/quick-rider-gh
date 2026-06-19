@@ -1,11 +1,12 @@
 import type { EngineInput, EngineOutput } from '../../types'
 import { getEaseValues, cm } from '../../types'
-import type { PatternPiece } from '../../../types/pattern.types'
+import type { PatternPiece, PatternPath } from '../../../types/pattern.types'
 import { generateId } from '../../../../../shared/utils/uuid'
+import { buildSeamLine, edgeNotch } from '../../utils/seamAllowance'
 
 // Women's skirt blocks: A-line, Straight, Flared
 export function generateSkirt(garmentType: string, input: EngineInput): EngineOutput {
-  const { measurements: m, params } = input
+  const { measurements: m, params, seamAllowance: sa } = input
   const ease = getEaseValues(params.easePreference ?? 'regular')
   const warnings: string[] = []
 
@@ -25,22 +26,24 @@ export function generateSkirt(garmentType: string, input: EngineInput): EngineOu
   if (garmentType === 'womens-straight-skirt') {
     const hemH = cm((hips + ease.hips - 4) / 4) // slight taper at hem
 
+    const straightOutline: PatternPath = {
+      isClosed: true, isSeamLine: false,
+      points: [
+        { x: 0, y: 0 },
+        { x: waistH, y: 0 },
+        { x: hipH, y: waistToHip },
+        { x: hemH, y: skirtLength },
+        { x: 0, y: skirtLength },
+      ],
+    }
     const frontPiece: PatternPiece = {
       id: generateId(),
       name: 'Front Skirt',
       color: '#1A1A2E',
       quantity: 1,
       mirror: false,
-      outline: {
-        isClosed: true, isSeamLine: false,
-        points: [
-          { x: 0, y: 0 },
-          { x: waistH, y: 0 },
-          { x: hipH, y: waistToHip },
-          { x: hemH, y: skirtLength },
-          { x: 0, y: skirtLength },
-        ],
-      },
+      outline: straightOutline,
+      seamLine: buildSeamLine(straightOutline, sa),
       grainLine: { start: { x: 1, y: 5 }, end: { x: 1, y: skirtLength - 5 } },
       foldLine: { isClosed: false, isFoldLine: true, points: [{ x: 0, y: 0 }, { x: 0, y: skirtLength }] },
       darts: [
@@ -51,7 +54,9 @@ export function generateSkirt(garmentType: string, input: EngineInput): EngineOu
           depth: 2,
         },
       ],
+      notches: [edgeNotch(straightOutline.points, 1, 0)],
       annotations: [{ position: { x: hipH / 2, y: skirtLength / 2 }, label: 'FRONT (FOLD)' }],
+      keyMeasurements: [`Waist: ${waist}cm`, `Length: ${skirtLength}cm`],
     }
 
     return { pieces: [frontPiece, { ...frontPiece, id: generateId(), name: 'Back Skirt', color: '#0F3460', annotations: [{ position: { x: hipH / 2, y: skirtLength / 2 }, label: 'BACK (FOLD)' }] }], warnings }
@@ -59,22 +64,24 @@ export function generateSkirt(garmentType: string, input: EngineInput): EngineOu
 
   // A-line skirt — standard construction
   const alineFlare = cm((hips - waist) * 0.5)
+  const alineOutline: PatternPath = {
+    isClosed: true, isSeamLine: false,
+    points: [
+      { x: 0, y: 0 },
+      { x: waistH, y: 0 },
+      { x: hipH, y: waistToHip },
+      { x: hipH + cm(alineFlare * 0.3), y: skirtLength },
+      { x: 0, y: skirtLength },
+    ],
+  }
   const frontPiece: PatternPiece = {
     id: generateId(),
     name: 'Front A-line Skirt',
     color: '#1A1A2E',
     quantity: 1,
     mirror: false,
-    outline: {
-      isClosed: true, isSeamLine: false,
-      points: [
-        { x: 0, y: 0 },
-        { x: waistH, y: 0 },
-        { x: hipH, y: waistToHip },
-        { x: hipH + cm(alineFlare * 0.3), y: skirtLength },
-        { x: 0, y: skirtLength },
-      ],
-    },
+    outline: alineOutline,
+    seamLine: buildSeamLine(alineOutline, sa),
     grainLine: { start: { x: 1, y: 5 }, end: { x: 1, y: skirtLength - 5 } },
     foldLine: { isClosed: false, isFoldLine: true, points: [{ x: 0, y: 0 }, { x: 0, y: skirtLength }] },
     darts: [
@@ -85,7 +92,9 @@ export function generateSkirt(garmentType: string, input: EngineInput): EngineOu
         depth: 2,
       },
     ],
+    notches: [edgeNotch(alineOutline.points, 1, 0)],
     annotations: [{ position: { x: hipH / 2, y: skirtLength / 2 }, label: 'FRONT A-LINE (FOLD)' }],
+    keyMeasurements: [`Waist: ${waist}cm`, `Hips: ${hips}cm`, `Length: ${skirtLength}cm`],
   }
 
   const backPiece: PatternPiece = {
@@ -97,23 +106,26 @@ export function generateSkirt(garmentType: string, input: EngineInput): EngineOu
   }
 
   // Waistband
+  const waistbandOutline: PatternPath = {
+    isClosed: true, isSeamLine: false,
+    points: [
+      { x: 0, y: 0 },
+      { x: cm(waist + ease.waist), y: 0 },
+      { x: cm(waist + ease.waist), y: 4 },
+      { x: 0, y: 4 },
+    ],
+  }
   const waistband: PatternPiece = {
     id: generateId(),
     name: 'Waistband',
     color: '#475569',
     quantity: 1,
     mirror: false,
-    outline: {
-      isClosed: true, isSeamLine: false,
-      points: [
-        { x: 0, y: 0 },
-        { x: cm(waist + ease.waist), y: 0 },
-        { x: cm(waist + ease.waist), y: 4 },
-        { x: 0, y: 4 },
-      ],
-    },
+    outline: waistbandOutline,
+    seamLine: buildSeamLine(waistbandOutline, sa),
     foldLine: { isClosed: false, isFoldLine: true, points: [{ x: 0, y: 2 }, { x: cm(waist + ease.waist), y: 2 }] },
     annotations: [{ position: { x: cm((waist + ease.waist) / 2), y: 2 }, label: 'WAISTBAND' }],
+    keyMeasurements: [`Waist: ${waist}cm`],
   }
 
   return { pieces: [frontPiece, backPiece, waistband], warnings }

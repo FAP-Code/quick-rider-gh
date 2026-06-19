@@ -109,6 +109,8 @@ export interface PatternPiece {
   color?: string
   quantity?: number
   mirror?: boolean
+  /** Short human-readable measurements relevant to this piece, e.g. "Chest: 50cm" */
+  keyMeasurements?: string[]
 }
 
 export interface PatternData {

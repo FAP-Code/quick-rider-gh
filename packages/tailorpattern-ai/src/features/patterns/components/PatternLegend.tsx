@@ -10,17 +10,22 @@ export function PatternLegend({ patternData }: PatternLegendProps): JSX.Element 
       <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Pattern Pieces</p>
       <div className="space-y-1.5">
         {patternData.pieces.map(piece => (
-          <div key={piece.id} className="flex items-center gap-2">
-            <div
-              className="w-4 h-4 rounded flex-shrink-0 opacity-80"
-              style={{ backgroundColor: piece.color ?? '#1A1A2E' }}
-            />
-            <span className="text-xs text-text-body">{piece.name}</span>
-            {piece.quantity && piece.quantity > 1 && (
-              <span className="text-xs text-text-muted ml-auto">×{piece.quantity}</span>
-            )}
-            {piece.mirror && (
-              <span className="text-[10px] text-text-muted">(mirror)</span>
+          <div key={piece.id} className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-4 h-4 rounded flex-shrink-0 opacity-80"
+                style={{ backgroundColor: piece.color ?? '#1A1A2E' }}
+              />
+              <span className="text-xs text-text-body">{piece.name}</span>
+              {piece.quantity && piece.quantity > 1 && (
+                <span className="text-xs text-text-muted ml-auto">×{piece.quantity}</span>
+              )}
+              {piece.mirror && (
+                <span className="text-[10px] text-text-muted">(mirror)</span>
+              )}
+            </div>
+            {piece.keyMeasurements && piece.keyMeasurements.length > 0 && (
+              <p className="text-[10px] text-text-muted pl-6">{piece.keyMeasurements.join(' · ')}</p>
             )}
           </div>
         ))}

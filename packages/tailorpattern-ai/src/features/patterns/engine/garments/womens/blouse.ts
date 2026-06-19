@@ -1,11 +1,12 @@
 import type { EngineInput, EngineOutput } from '../../types'
 import { getEaseValues, cm } from '../../types'
-import type { PatternPiece } from '../../../types/pattern.types'
+import type { PatternPiece, PatternPath } from '../../../types/pattern.types'
 import { generateId } from '../../../../../shared/utils/uuid'
+import { buildSeamLine, edgeNotch } from '../../utils/seamAllowance'
 
 // Women's blouse block based on Aldrich womenswear pattern cutting
 export function generateBlouse(input: EngineInput): EngineOutput {
-  const { measurements: m, params } = input
+  const { measurements: m, params, seamAllowance: sa } = input
   const ease = getEaseValues(params.easePreference ?? 'regular')
   const warnings: string[] = []
 
@@ -32,48 +33,54 @@ export function generateBlouse(input: EngineInput): EngineOutput {
   const bicepW = cm((bicep + ease.sleeve) / 2)
   const cuffW = cm(wrist + 5)
 
+  const backOutline: PatternPath = {
+    isClosed: true, isSeamLine: false,
+    points: [
+      { x: 0, y: 0 },
+      { x: neckW, y: -2 },
+      { x: backShoulderW, y: -armholeDepth * 0.05 },
+      { x: backBustW, y: armholeDepth },
+      { x: backBustW - 1, y: backLength },
+      { x: 0, y: backLength },
+    ],
+  }
   const backPiece: PatternPiece = {
     id: generateId(),
     name: 'Back Blouse',
     color: '#1A1A2E',
     quantity: 1,
     mirror: false,
-    outline: {
-      isClosed: true, isSeamLine: false,
-      points: [
-        { x: 0, y: 0 },
-        { x: neckW, y: -2 },
-        { x: backShoulderW, y: -armholeDepth * 0.05 },
-        { x: backBustW, y: armholeDepth },
-        { x: backBustW - 1, y: backLength },
-        { x: 0, y: backLength },
-      ],
-    },
+    outline: backOutline,
+    seamLine: buildSeamLine(backOutline, sa),
     grainLine: { start: { x: 1, y: 5 }, end: { x: 1, y: backLength - 5 } },
     foldLine: {
       isClosed: false, isFoldLine: true,
       points: [{ x: 0, y: 0 }, { x: 0, y: backLength }],
     },
+    notches: [edgeNotch(backOutline.points, 2, 0)],
     annotations: [{ position: { x: backBustW / 2, y: backLength / 2 }, label: 'BACK (FOLD)' }],
+    keyMeasurements: [`Bust: ${bust}cm`, `Length: ${backLength}cm`],
   }
 
+  const frontOutline: PatternPath = {
+    isClosed: true, isSeamLine: false,
+    points: [
+      { x: 0, y: 0 },
+      { x: neckW, y: -(neckCirc / 5 + 2) },
+      { x: backShoulderW - 0.5, y: -(armholeDepth * 0.1) },
+      { x: frontBustW, y: armholeDepth },
+      { x: frontBustW - 1, y: frontLength },
+      { x: 0, y: frontLength },
+    ],
+  }
   const frontPiece: PatternPiece = {
     id: generateId(),
     name: 'Front Blouse',
     color: '#0F3460',
     quantity: 2,
     mirror: true,
-    outline: {
-      isClosed: true, isSeamLine: false,
-      points: [
-        { x: 0, y: 0 },
-        { x: neckW, y: -(neckCirc / 5 + 2) },
-        { x: backShoulderW - 0.5, y: -(armholeDepth * 0.1) },
-        { x: frontBustW, y: armholeDepth },
-        { x: frontBustW - 1, y: frontLength },
-        { x: 0, y: frontLength },
-      ],
-    },
+    outline: frontOutline,
+    seamLine: buildSeamLine(frontOutline, sa),
     grainLine: { start: { x: frontBustW / 2, y: 5 }, end: { x: frontBustW / 2, y: frontLength - 5 } },
     darts: [
       {
@@ -83,27 +90,33 @@ export function generateBlouse(input: EngineInput): EngineOutput {
         depth: bustDart,
       },
     ],
+    notches: [edgeNotch(frontOutline.points, 2, 0)],
     annotations: [{ position: { x: frontBustW / 2, y: frontLength / 2 }, label: 'FRONT' }],
+    keyMeasurements: [`Bust: ${bust}cm`, `Waist: ${waist}cm`],
   }
 
+  const sleeveOutline: PatternPath = {
+    isClosed: true, isSeamLine: false,
+    points: [
+      { x: 0, y: 0 },
+      { x: bicepW, y: cm(armholeDepth * 0.6) },
+      { x: cuffW / 2, y: sleeveLen },
+      { x: -cuffW / 2, y: sleeveLen },
+      { x: -bicepW, y: cm(armholeDepth * 0.6) },
+    ],
+  }
   const sleevePiece: PatternPiece = {
     id: generateId(),
     name: 'Sleeve',
     color: '#C9A84C',
     quantity: 2,
     mirror: false,
-    outline: {
-      isClosed: true, isSeamLine: false,
-      points: [
-        { x: 0, y: 0 },
-        { x: bicepW, y: cm(armholeDepth * 0.6) },
-        { x: cuffW / 2, y: sleeveLen },
-        { x: -cuffW / 2, y: sleeveLen },
-        { x: -bicepW, y: cm(armholeDepth * 0.6) },
-      ],
-    },
+    outline: sleeveOutline,
+    seamLine: buildSeamLine(sleeveOutline, sa),
     grainLine: { start: { x: 0, y: armholeDepth * 0.6 + 3 }, end: { x: 0, y: sleeveLen - 5 } },
+    notches: [edgeNotch(sleeveOutline.points, 0, 90), edgeNotch(sleeveOutline.points, 3, -90)],
     annotations: [{ position: { x: 0, y: sleeveLen / 2 }, label: 'SLEEVE' }],
+    keyMeasurements: [`Sleeve length: ${sleeveLen}cm`, `Bicep: ${bicep}cm`],
   }
 
   return { pieces: [backPiece, frontPiece, sleevePiece], warnings }

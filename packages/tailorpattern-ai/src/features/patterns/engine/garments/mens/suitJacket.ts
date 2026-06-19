@@ -79,6 +79,7 @@ export function generateSuitJacket(input: EngineInput): EngineOutput {
         { x: 0, y: jacketLength + sa },
       ],
     },
+    keyMeasurements: [`Chest: ${chest}cm`, `Length: ${jacketLength}cm`],
   }
 
   // ── FRONT BODY PIECE ────────────────────────────────────────────────────
@@ -130,6 +131,7 @@ export function generateSuitJacket(input: EngineInput): EngineOutput {
         { x: 0, y: jacketLength + sa },
       ],
     },
+    keyMeasurements: [`Chest: ${chest}cm`, `Waist: ${waist}cm`],
   }
 
   // ── SLEEVE (2-piece construction) ───────────────────────────────────────
@@ -161,6 +163,7 @@ export function generateSuitJacket(input: EngineInput): EngineOutput {
     notches: [
       { position: { x: bicepW * 0.5, y: capHeight * 0.3 }, angle: 90 },
     ],
+    keyMeasurements: [`Sleeve length: ${sleeveLen}cm`, `Bicep: ${bicep}cm`],
   }
 
   // ── COLLAR (under collar + top collar) ──────────────────────────────────
@@ -196,6 +199,7 @@ export function generateSuitJacket(input: EngineInput): EngineOutput {
     annotations: [
       { position: { x: collarLen / 4, y: collarW / 2 }, label: 'COLLAR (CUT 2)' },
     ],
+    keyMeasurements: [`Neck: ${neckCirc}cm`],
   }
 
   // ── POCKET FLAP ─────────────────────────────────────────────────────────
