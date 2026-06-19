@@ -2,7 +2,7 @@ import { db } from '../../../shared/db'
 import { generateId, nowISO } from '../../../shared/utils/uuid'
 import { enqueue } from '../../../shared/sync/syncQueue'
 import { generatePattern } from '../engine'
-import type { PatternProject, PatternData, GarmentType, StyleParameters } from '../types/pattern.types'
+import type { PatternProject, PatternData, GarmentType, StyleParameters, InputMethod } from '../types/pattern.types'
 import type { MeasurementData } from '../../measurements/types/measurement.types'
 
 export async function getPatternProjects(businessId: string): Promise<PatternProject[]> {
@@ -90,6 +90,18 @@ export async function generateAndSavePattern(
   })
 
   return patternData
+}
+
+export async function updatePatternInputMethod(
+  id: string,
+  data: {
+    inputMethod: InputMethod
+    photoReferenceUrl?: string
+    sketchDataUrl?: string
+    notes?: string
+  },
+): Promise<void> {
+  await db.patternProjects.update(id, { ...data, updatedAt: nowISO() })
 }
 
 export async function updatePatternStatus(

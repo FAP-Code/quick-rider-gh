@@ -1,37 +1,41 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Users, Zap } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Users, Zap, Info } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PageHeader } from '../../../shared/components/layout/PageHeader'
 import { Button } from '../../../shared/components/ui/Button'
 import { Input } from '../../../shared/components/ui/Input'
 import { GarmentTypeSelector } from '../components/GarmentTypeSelector'
 import { StyleParameterPanel } from '../components/StyleParameterPanel'
+import { InputMethodSelector } from '../components/InputMethodSelector'
 import { MeasurementField } from '../../measurements/components/MeasurementField'
 import { MEASUREMENT_SECTIONS, MEASUREMENT_SECTIONS_MAP } from '../../measurements/engine/constants'
 import { useCustomers } from '../../customers/hooks/useCustomers'
 import { useMeasurements } from '../../measurements/hooks/useMeasurements'
 import { useCreatePatternProject } from '../hooks/usePatternProjects'
 import { usePatternGenerator } from '../hooks/usePatternGenerator'
+import { updatePatternInputMethod } from '../services/patternService'
 import { Avatar } from '../../../shared/components/ui/Avatar'
 import { cn } from '../../../shared/utils/cn'
-import type { GarmentType, StyleParameters } from '../types/pattern.types'
+import type { GarmentType, StyleParameters, InputMethod } from '../types/pattern.types'
 import type { MeasurementData } from '../../measurements/types/measurement.types'
 
 type Mode = 'customer' | 'standalone'
 
 const CUSTOMER_STEPS = [
   { label: 'Customer', description: 'Select or create a customer' },
-  { label: 'Measurements', description: 'Select a measurement set' },
   { label: 'Garment', description: 'Choose the garment type' },
+  { label: 'Input Method', description: 'How would you like to provide details?' },
+  { label: 'Measurements', description: 'Select a measurement set' },
   { label: 'Style', description: 'Configure style parameters' },
   { label: 'Generate', description: 'Review and generate your pattern' },
 ]
 
 const STANDALONE_STEPS = [
   { label: 'Garment', description: 'Choose the garment type' },
-  { label: 'Style', description: 'Configure style parameters' },
+  { label: 'Input Method', description: 'How would you like to provide details?' },
   { label: 'Measurements', description: 'Enter body measurements' },
+  { label: 'Style', description: 'Configure style parameters' },
   { label: 'Generate', description: 'Review and generate your pattern' },
 ]
 
@@ -47,6 +51,10 @@ export function PatternNewPage(): JSX.Element {
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
   const [standaloneUnit, setStandaloneUnit] = useState<'cm' | 'inches'>('cm')
   const [standaloneMeasurements, setStandaloneMeasurements] = useState<Partial<Record<string, number>>>({})
+  const [inputMethod, setInputMethod] = useState<InputMethod>('manual')
+  const [inputMethodNotes, setInputMethodNotes] = useState('')
+  const [inputMethodFileDataUrl, setInputMethodFileDataUrl] = useState<string | null>(null)
+  const [inputMethodSketchDataUrl, setInputMethodSketchDataUrl] = useState<string | null>(null)
 
   const { data: customers } = useCustomers()
   const { data: measurements } = useMeasurements(selectedCustomerId)
@@ -63,10 +71,11 @@ export function PatternNewPage(): JSX.Element {
     if (mode === 'customer') {
       switch (step) {
         case 0: return Boolean(selectedCustomerId)
-        case 1: return Boolean(selectedMeasurementId)
-        case 2: return Boolean(garmentType)
-        case 3: return true
-        case 4: return Boolean(projectName)
+        case 1: return Boolean(garmentType)
+        case 2: return true
+        case 3: return Boolean(selectedMeasurementId)
+        case 4: return true
+        case 5: return Boolean(projectName)
         default: return false
       }
     }
@@ -75,7 +84,8 @@ export function PatternNewPage(): JSX.Element {
       case 0: return Boolean(garmentType)
       case 1: return true
       case 2: return true
-      case 3: return Boolean(projectName)
+      case 3: return true
+      case 4: return Boolean(projectName)
       default: return false
     }
   }
@@ -119,6 +129,23 @@ export function PatternNewPage(): JSX.Element {
     })
 
     setCreatedProjectId(project.id)
+
+    if (inputMethod !== 'manual') {
+      await updatePatternInputMethod(project.id, {
+        inputMethod,
+        ...(inputMethod === 'sketch-draw' && inputMethodSketchDataUrl
+          ? { sketchDataUrl: inputMethodSketchDataUrl }
+          : {}),
+        ...(inputMethod === 'sketch-upload' && inputMethodFileDataUrl
+          ? { sketchDataUrl: inputMethodFileDataUrl }
+          : {}),
+        ...((inputMethod === 'garment-photo' || inputMethod === 'customer-photo' || inputMethod === 'pattern-upload') && inputMethodFileDataUrl
+          ? { photoReferenceUrl: inputMethodFileDataUrl }
+          : {}),
+        ...(inputMethod === 'ai-prompt' && inputMethodNotes ? { notes: inputMethodNotes } : {}),
+      })
+    }
+
     await generateMutation.mutateAsync(measurementsData)
     navigate(`/patterns/${project.id}`)
   }
@@ -244,9 +271,44 @@ export function PatternNewPage(): JSX.Element {
             </div>
           )}
 
-          {/* Customer mode – step 1: pick measurement set */}
-          {mode === 'customer' && step === 1 && (
+          {/* Garment type – shared (customer step 1, standalone step 0) */}
+          {((mode === 'customer' && step === 1) || (mode === 'standalone' && step === 0)) && (
+            <GarmentTypeSelector
+              value={garmentType}
+              onChange={type => {
+                setGarmentType(type)
+                if (!projectName && mode === 'customer') {
+                  setProjectName(`${type.replace(/-/g, ' ')} for ${selectedCustomer?.fullName ?? ''}`)
+                }
+              }}
+            />
+          )}
+
+          {/* Input method – shared (customer step 2, standalone step 1) */}
+          {((mode === 'customer' && step === 2) || (mode === 'standalone' && step === 1)) && (
+            <InputMethodSelector
+              value={inputMethod}
+              onChange={setInputMethod}
+              notes={inputMethodNotes}
+              onNotesChange={setInputMethodNotes}
+              fileDataUrl={inputMethodFileDataUrl}
+              onFileChange={setInputMethodFileDataUrl}
+              onSketchSave={setInputMethodSketchDataUrl}
+            />
+          )}
+
+          {/* Customer mode – measurement set step 3 */}
+          {mode === 'customer' && step === 3 && (
             <div className="space-y-2">
+              {inputMethod !== 'manual' && (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-brand-mid/5 border border-brand-mid/20 mb-2">
+                  <Info size={14} className="text-brand-mid flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-brand-mid">
+                    We saved your input. Please confirm or select the measurement set to use until automatic
+                    extraction is available.
+                  </p>
+                </div>
+              )}
               {!measurements?.length && (
                 <div className="text-center py-8">
                   <p className="text-sm text-text-muted mb-3">No measurements for {selectedCustomer?.fullName}.</p>
@@ -283,27 +345,17 @@ export function PatternNewPage(): JSX.Element {
             </div>
           )}
 
-          {/* Garment type – shared (customer step 2, standalone step 0) */}
-          {((mode === 'customer' && step === 2) || (mode === 'standalone' && step === 0)) && (
-            <GarmentTypeSelector
-              value={garmentType}
-              onChange={type => {
-                setGarmentType(type)
-                if (!projectName && mode === 'customer') {
-                  setProjectName(`${type.replace(/-/g, ' ')} for ${selectedCustomer?.fullName ?? ''}`)
-                }
-              }}
-            />
-          )}
-
-          {/* Style parameters – shared (customer step 3, standalone step 1) */}
-          {((mode === 'customer' && step === 3) || (mode === 'standalone' && step === 1)) && garmentType && (
-            <StyleParameterPanel garmentType={garmentType} value={styleParams} onChange={setStyleParams} />
-          )}
-
-          {/* Standalone only – step 2: inline measurements */}
+          {/* Standalone mode – inline measurements step 2 */}
           {mode === 'standalone' && step === 2 && (
             <div className="space-y-6">
+              {inputMethod !== 'manual' && (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-brand-mid/5 border border-brand-mid/20">
+                  <Info size={14} className="text-brand-mid flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-brand-mid">
+                    We saved your input. Please confirm measurements below until automatic extraction is available.
+                  </p>
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <label className="text-sm font-medium text-text-body">Unit</label>
                 <select
@@ -345,8 +397,13 @@ export function PatternNewPage(): JSX.Element {
             </div>
           )}
 
-          {/* Review & Generate – shared (customer step 4, standalone step 3) */}
-          {((mode === 'customer' && step === 4) || (mode === 'standalone' && step === 3)) && (
+          {/* Style parameters – shared (customer step 4, standalone step 3) */}
+          {((mode === 'customer' && step === 4) || (mode === 'standalone' && step === 3)) && garmentType && (
+            <StyleParameterPanel garmentType={garmentType} value={styleParams} onChange={setStyleParams} />
+          )}
+
+          {/* Review & Generate – shared (customer step 5, standalone step 4) */}
+          {((mode === 'customer' && step === 5) || (mode === 'standalone' && step === 4)) && (
             <div className="space-y-4">
               <Input
                 label="Project Name"
@@ -377,6 +434,10 @@ export function PatternNewPage(): JSX.Element {
                 <div className="flex justify-between text-sm">
                   <span className="text-text-muted">Garment</span>
                   <span className="font-medium capitalize">{garmentType?.replace(/-/g, ' ')}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-muted">Input Method</span>
+                  <span className="font-medium capitalize">{inputMethod.replace(/-/g, ' ')}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-text-muted">Ease</span>

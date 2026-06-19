@@ -31,6 +31,18 @@ export const GARMENT_TYPES = [
 
 export type GarmentType = (typeof GARMENT_TYPES)[number]
 
+export const INPUT_METHODS = [
+  'manual',
+  'ai-prompt',
+  'garment-photo',
+  'customer-photo',
+  'sketch-upload',
+  'sketch-draw',
+  'pattern-upload',
+] as const
+
+export type InputMethod = (typeof INPUT_METHODS)[number]
+
 export interface StyleParameters {
   // Suit Jacket
   lapelStyle?: 'notch' | 'peak' | 'shawl'
@@ -124,6 +136,7 @@ export const PatternProjectSchema = z.object({
   notes: z.string().optional(),
   photoReferenceUrl: z.string().optional(),
   sketchDataUrl: z.string().optional(),
+  inputMethod: z.enum(INPUT_METHODS).optional(),
   deletedAt: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
