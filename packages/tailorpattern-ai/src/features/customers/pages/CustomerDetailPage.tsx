@@ -8,6 +8,7 @@ import { Drawer } from '../../../shared/components/ui/Drawer'
 import { Skeleton } from '../../../shared/components/ui/Skeleton'
 import { CustomerForm } from '../components/CustomerForm'
 import { DigitalTwinCard } from '../components/DigitalTwinCard'
+import { AvatarPreviewCard } from '../components/AvatarPreviewCard'
 import { useCustomer } from '../hooks/useCustomers'
 import { useUpdateCustomer } from '../hooks/useCustomerMutations'
 import { useMeasurements } from '../../measurements/hooks/useMeasurements'
@@ -179,6 +180,12 @@ export function CustomerDetailPage(): JSX.Element {
               null
             }
           />
+
+          {/* 3D avatar preview placeholder */}
+          {measurementSets && measurementSets.length > 0 && (() => {
+            const activeSet = measurementSets.find(s => s.isDefault) ?? measurementSets[0]
+            return activeSet ? <AvatarPreviewCard measurements={activeSet.measurements} /> : null
+          })()}
 
           {/* Existing sets list */}
           {measurementSets && measurementSets.length > 0 ? (

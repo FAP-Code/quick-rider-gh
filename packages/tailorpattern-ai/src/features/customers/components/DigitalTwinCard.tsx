@@ -110,9 +110,9 @@ export function DigitalTwinCard({ measurementSet, className }: DigitalTwinCardPr
       )}
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-surface-muted bg-amber-50">
-        <p className="text-[9px] text-amber-700 text-center">
-          2D silhouette only · 3D avatar preview coming in Phase 7
+      <div className="px-4 py-2 border-t border-surface-muted bg-surface-subtle">
+        <p className="text-[9px] text-text-muted text-center">
+          2D measurement silhouette · see 3D Avatar Preview below
         </p>
       </div>
     </div>
