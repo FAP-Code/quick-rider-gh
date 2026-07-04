@@ -7,6 +7,7 @@ import { PatternSVGPreview } from '../components/PatternSVGPreview'
 import { PatternLegend } from '../components/PatternLegend'
 import { PatternStatusWorkflow } from '../components/PatternStatusWorkflow'
 import { SewingInstructorPanel } from '../components/SewingInstructorPanel'
+import { SewingVideoPanel } from '../components/SewingVideoPanel'
 import { Skeleton } from '../../../shared/components/ui/Skeleton'
 import { usePatternProject } from '../hooks/usePatternProjects'
 import { usePDFExport } from '../hooks/usePDFExport'
@@ -199,6 +200,9 @@ export function PatternDetailPage(): JSX.Element {
 
       {/* AI Sewing Instructor */}
       <SewingInstructorPanel garmentType={project.garmentType} />
+
+      {/* Tutorial video placeholders */}
+      <SewingVideoPanel garmentType={project.garmentType} />
     </motion.div>
   )
 }
