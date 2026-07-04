@@ -202,29 +202,37 @@ export async function exportPatternToPDF(
   pdf.setFillColor(255, 255, 255)
   pdf.rect(0, 0, pageW, pageH, 'F')
 
-  // Render SVG as embedded image via canvas (basic approach)
-  // In production, use svg2pdf.js for vector fidelity
-  const blob = new Blob([svgString], { type: 'image/svg+xml' })
+  // Parse viewBox from SVG string to get reliable dimensions regardless of
+  // whether the <img> is in the DOM (img.width is 0 off-DOM; naturalWidth
+  // reads the SVG's intrinsic size which is what we need for canvas sizing).
+  const vbMatch = svgString.match(/viewBox="0 0 ([0-9.]+) ([0-9.]+)"/)
+  const svgNatW = vbMatch ? parseFloat(vbMatch[1] ?? '800') : 800
+  const svgNatH = vbMatch ? parseFloat(vbMatch[2] ?? '600') : 600
+
+  const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const img = new Image()
 
   await new Promise<void>(resolve => {
     img.onload = (): void => {
+      // Use 3× scale for crisp print resolution
+      const PRINT_SCALE = 3
       const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
+      canvas.width  = Math.round(svgNatW * PRINT_SCALE)
+      canvas.height = Math.round(svgNatH * PRINT_SCALE)
       const ctx = canvas.getContext('2d')
       if (ctx) {
-        ctx.drawImage(img, 0, 0)
+        ctx.scale(PRINT_SCALE, PRINT_SCALE)
+        ctx.drawImage(img, 0, 0, svgNatW, svgNatH)
         const dataUrl = canvas.toDataURL('image/png')
         const imgW = CONTENT_W
-        const imgH = (img.height / img.width) * imgW
+        const imgH = (svgNatH / svgNatW) * imgW
         pdf.addImage(dataUrl, 'PNG', MARGIN, MARGIN, imgW, Math.min(imgH, pageH - MARGIN * 2))
       }
       URL.revokeObjectURL(url)
       resolve()
     }
-    img.onerror = (): void => resolve()
+    img.onerror = (): void => { URL.revokeObjectURL(url); resolve() }
     img.src = url
   })
 
