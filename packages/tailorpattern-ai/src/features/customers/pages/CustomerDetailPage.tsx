@@ -7,8 +7,10 @@ import { Button } from '../../../shared/components/ui/Button'
 import { Drawer } from '../../../shared/components/ui/Drawer'
 import { Skeleton } from '../../../shared/components/ui/Skeleton'
 import { CustomerForm } from '../components/CustomerForm'
+import { DigitalTwinCard } from '../components/DigitalTwinCard'
 import { useCustomer } from '../hooks/useCustomers'
 import { useUpdateCustomer } from '../hooks/useCustomerMutations'
+import { useMeasurements } from '../../measurements/hooks/useMeasurements'
 import { usePatternProjectsByCustomer } from '../../patterns/hooks/usePatternProjects'
 import type { CustomerFormData } from '../types/customer.types'
 
@@ -23,6 +25,7 @@ export function CustomerDetailPage(): JSX.Element {
   const { data: customer, isLoading } = useCustomer(id)
   const updateMutation = useUpdateCustomer(id)
   const { data: customerPatterns } = usePatternProjectsByCustomer(id)
+  const { data: measurementSets } = useMeasurements(id)
 
   // Find the most recent customer-photo reference for the measurement assistant
   const latestPhotoUrl = customerPatterns
@@ -155,7 +158,7 @@ export function CustomerDetailPage(): JSX.Element {
       )}
 
       {activeTab === 'measurements' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Button
             onClick={() => navigate(
               `/measurements/new/${customer.id}`,
@@ -167,9 +170,36 @@ export function CustomerDetailPage(): JSX.Element {
           >
             Take New Measurements
           </Button>
-          <p className="text-sm text-text-muted text-center py-8">
-            Measurement sets for {customer.fullName} will appear here.
-          </p>
+
+          {/* Digital twin card — shows default or most recent set */}
+          <DigitalTwinCard
+            measurementSet={
+              measurementSets?.find(s => s.isDefault) ??
+              measurementSets?.[0] ??
+              null
+            }
+          />
+
+          {/* Existing sets list */}
+          {measurementSets && measurementSets.length > 0 ? (
+            <div className="space-y-2">
+              {measurementSets.map(set => (
+                <div key={set.id} className="bg-white rounded-xl border border-surface-muted px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-text-primary">{set.label}</p>
+                    <p className="text-xs text-text-muted">{new Date(set.takenAt).toLocaleDateString('en-GB')}</p>
+                  </div>
+                  {set.isDefault && (
+                    <Badge variant="info" size="sm">Default</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-text-muted text-center py-4">
+              No measurement sets yet for {customer.fullName}.
+            </p>
+          )}
         </div>
       )}
 
