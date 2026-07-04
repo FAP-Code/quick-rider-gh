@@ -1,6 +1,7 @@
-import { type ChangeEvent } from 'react'
 import { Ruler, Sparkles, Shirt, Camera, Upload, PenTool, FileUp, Check } from 'lucide-react'
 import { SketchCanvas } from '../../sketch/components/SketchCanvas'
+import { PhotoUploadZone } from './PhotoUploadZone'
+import { PhotoAnalysisPlaceholder } from './PhotoAnalysisPlaceholder'
 import { cn } from '../../../shared/utils/cn'
 import type { InputMethod } from '../types/pattern.types'
 
@@ -22,6 +23,8 @@ const OPTIONS: InputMethodOption[] = [
   { value: 'pattern-upload', label: 'Upload Existing Pattern', description: 'A pattern file to use as a starting point', icon: FileUp, placeholder: true },
 ]
 
+const PHOTO_ANALYSIS_METHODS: InputMethod[] = ['garment-photo', 'customer-photo', 'pattern-upload']
+
 interface InputMethodSelectorProps {
   value: InputMethod
   onChange: (method: InputMethod) => void
@@ -42,17 +45,7 @@ export function InputMethodSelector({
   onSketchSave,
 }: InputMethodSelectorProps): JSX.Element {
   const selected = OPTIONS.find(o => o.value === value)
-
-  const handleFileInput = (e: ChangeEvent<HTMLInputElement>): void => {
-    const file = e.target.files?.[0]
-    if (!file) {
-      onFileChange(null)
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = () => onFileChange(typeof reader.result === 'string' ? reader.result : null)
-    reader.readAsDataURL(file)
-  }
+  const isPhotoMethod = PHOTO_ANALYSIS_METHODS.includes(value)
 
   return (
     <div className="space-y-4">
@@ -96,40 +89,58 @@ export function InputMethodSelector({
         })}
       </div>
 
-      {selected?.placeholder && (
+      {/* AI-prompt text input */}
+      {selected?.placeholder && value === 'ai-prompt' && (
         <div className="rounded-xl border border-brand-mid/20 bg-brand-mid/5 p-4 space-y-3">
           <p className="text-xs text-brand-mid">
-            <strong>AI-ready photo analysis placeholder.</strong> Automatic extraction isn&rsquo;t implemented yet —
-            we&rsquo;ll save what you provide here, and you&rsquo;ll confirm measurements manually in the next step.
+            <strong>AI-ready text prompt.</strong> Describe the garment — style, fabric, fit — and AI will use this to guide pattern generation once the feature is active.
           </p>
+          <textarea
+            value={notes}
+            onChange={e => onNotesChange(e.target.value)}
+            placeholder="e.g. A slim-fit navy suit jacket with peak lapels and two buttons..."
+            rows={4}
+            className="w-full rounded-xl border border-surface-muted bg-white text-sm p-3 focus:outline-none focus:ring-2 focus:ring-brand-gold focus:border-transparent resize-none"
+          />
+        </div>
+      )}
 
-          {value === 'ai-prompt' && (
-            <textarea
-              value={notes}
-              onChange={e => onNotesChange(e.target.value)}
-              placeholder="e.g. A slim-fit navy suit jacket with peak lapels and two buttons..."
-              rows={3}
-              className="w-full rounded-xl border border-surface-muted bg-white text-sm p-3 focus:outline-none focus:ring-2 focus:ring-brand-gold focus:border-transparent"
-            />
-          )}
+      {/* Photo upload + analysis placeholder */}
+      {selected?.placeholder && isPhotoMethod && (
+        <div className="space-y-3">
+          <PhotoUploadZone
+            dataUrl={fileDataUrl}
+            onChange={(url) => onFileChange(url)}
+            label={value === 'garment-photo' ? 'garment photo' : value === 'customer-photo' ? 'customer photo' : 'pattern file'}
+          />
+          <PhotoAnalysisPlaceholder
+            inputMethod={value}
+            hasPhoto={!!fileDataUrl}
+          />
+        </div>
+      )}
 
-          {(value === 'garment-photo' || value === 'customer-photo' || value === 'sketch-upload' || value === 'pattern-upload') && (
-            <div className="space-y-2">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileInput}
-                className="block w-full text-sm text-text-muted file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-navy file:text-white file:text-xs file:font-medium hover:file:bg-brand-mid cursor-pointer"
-              />
-              {fileDataUrl && (
-                <img src={fileDataUrl} alt="Uploaded preview" className="max-h-48 rounded-lg border border-surface-muted" />
-              )}
-            </div>
-          )}
+      {/* Sketch upload — simple file input (no AI analysis card) */}
+      {selected?.placeholder && value === 'sketch-upload' && (
+        <div className="rounded-xl border border-brand-mid/20 bg-brand-mid/5 p-4 space-y-3">
+          <p className="text-xs text-brand-mid">
+            <strong>AI-ready sketch upload.</strong> Your sketch will be saved as a reference. Manual measurements are still required.
+          </p>
+          <PhotoUploadZone
+            dataUrl={fileDataUrl}
+            onChange={(url) => onFileChange(url)}
+            label="sketch image"
+          />
+        </div>
+      )}
 
-          {value === 'sketch-draw' && (
-            <SketchCanvas onSave={onSketchSave} className="rounded-xl overflow-hidden border border-surface-muted" />
-          )}
+      {/* Sketch draw canvas */}
+      {selected?.placeholder && value === 'sketch-draw' && (
+        <div className="rounded-xl border border-brand-mid/20 bg-brand-mid/5 p-4 space-y-3">
+          <p className="text-xs text-brand-mid">
+            <strong>AI-ready sketch pad.</strong> Draw your design — this will be saved alongside the pattern for tailor reference.
+          </p>
+          <SketchCanvas onSave={onSketchSave} className="rounded-xl overflow-hidden border border-surface-muted" />
         </div>
       )}
     </div>

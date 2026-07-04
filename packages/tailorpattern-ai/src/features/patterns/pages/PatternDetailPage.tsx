@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Download, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Download, RefreshCw, ImageIcon, FileText } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '../../../shared/components/ui/Button'
 import { Badge } from '../../../shared/components/ui/Badge'
@@ -142,8 +142,51 @@ export function PatternDetailPage(): JSX.Element {
         </div>
       )}
 
-      {/* Notes */}
-      {project.notes && (
+      {/* Reference photo / sketch */}
+      {(project.photoReferenceUrl ?? project.sketchDataUrl) && (
+        <div className="bg-white rounded-2xl border border-surface-muted p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <ImageIcon size={14} className="text-text-muted" />
+            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+              {project.photoReferenceUrl ? 'Reference Photo' : 'Sketch Reference'}
+            </p>
+            <span className="ml-auto text-[10px] font-medium text-brand-mid bg-brand-mid/10 rounded-full px-2 py-0.5">
+              AI-ready placeholder
+            </span>
+          </div>
+          <img
+            src={(project.photoReferenceUrl ?? project.sketchDataUrl) as string}
+            alt="Pattern reference"
+            className="max-h-64 rounded-xl border border-surface-muted object-contain bg-surface-subtle w-full"
+          />
+          {project.inputMethod && (
+            <p className="text-[11px] text-text-muted mt-2">
+              Input method: <span className="font-medium text-text-body">{project.inputMethod.replace(/-/g, ' ')}</span>
+              {' '}· Automatic AI extraction is not yet active — measurements were entered manually.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* AI Prompt notes */}
+      {project.inputMethod === 'ai-prompt' && project.notes && (
+        <div className="bg-white rounded-2xl border border-surface-muted p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText size={14} className="text-text-muted" />
+            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Design Prompt</p>
+            <span className="ml-auto text-[10px] font-medium text-brand-mid bg-brand-mid/10 rounded-full px-2 py-0.5">
+              AI-ready placeholder
+            </span>
+          </div>
+          <p className="text-sm text-text-body whitespace-pre-line italic">"{project.notes}"</p>
+          <p className="text-[11px] text-text-muted mt-2">
+            This prompt will guide AI pattern generation once the feature is active.
+          </p>
+        </div>
+      )}
+
+      {/* General notes */}
+      {project.notes && project.inputMethod !== 'ai-prompt' && (
         <div className="bg-white rounded-2xl border border-surface-muted p-4">
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Notes</p>
           <p className="text-sm text-text-body whitespace-pre-line">{project.notes}</p>
