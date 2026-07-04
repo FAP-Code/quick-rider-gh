@@ -66,22 +66,26 @@ function GuardedApp(): JSX.Element {
     )
   }
 
+  const eb = (label: string, el: JSX.Element): JSX.Element => (
+    <ErrorBoundary label={label}>{el}</ErrorBoundary>
+  )
+
   return (
     <AppShell>
       <ErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/customers" element={<CustomersPage />} />
-            <Route path="/customers/:id" element={<CustomerDetailPage />} />
-            <Route path="/measurements" element={<Navigate to="/customers" replace />} />
-            <Route path="/measurements/new/:customerId" element={<MeasurementFormPage />} />
-            <Route path="/patterns" element={<PatternsPage />} />
-            <Route path="/patterns/new" element={<PatternNewPage />} />
-            <Route path="/patterns/:id" element={<PatternDetailPage />} />
-            <Route path="/sketch" element={<SketchPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/"                           element={eb('Dashboard',           <DashboardPage />)} />
+            <Route path="/customers"                  element={eb('Customers',           <CustomersPage />)} />
+            <Route path="/customers/:id"              element={eb('Customer detail',     <CustomerDetailPage />)} />
+            <Route path="/measurements"               element={<Navigate to="/customers" replace />} />
+            <Route path="/measurements/new/:customerId" element={eb('Measurements',      <MeasurementFormPage />)} />
+            <Route path="/patterns"                   element={eb('Patterns',            <PatternsPage />)} />
+            <Route path="/patterns/new"               element={eb('New pattern',         <PatternNewPage />)} />
+            <Route path="/patterns/:id"               element={eb('Pattern detail',      <PatternDetailPage />)} />
+            <Route path="/sketch"                     element={eb('Sketch pad',          <SketchPage />)} />
+            <Route path="/settings"                   element={eb('Settings',            <SettingsPage />)} />
+            <Route path="*"                           element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>

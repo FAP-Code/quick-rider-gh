@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Scissors, Plus, TrendingUp, FileWarning, Zap, ArrowUpRight } from 'lucide-react'
+import { Users, Scissors, Plus, TrendingUp, FileWarning, Zap, ArrowUpRight, BookOpenCheck } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Card, CardHeader, CardTitle } from '../../../shared/components/ui/Card'
 import { Button } from '../../../shared/components/ui/Button'
@@ -192,6 +192,44 @@ export function DashboardPage(): JSX.Element {
           </div>
         )}
       </div>
+
+      {/* Getting Started — shown when no customers AND no patterns */}
+      {!patternsLoading && customers !== undefined && customers.length === 0 && activePatterns.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.3 }}
+          className="rounded-2xl border border-brand-gold/30 bg-gradient-to-br from-brand-gold/5 to-transparent p-5 space-y-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-brand-gold/15 flex items-center justify-center flex-shrink-0">
+              <BookOpenCheck size={17} className="text-brand-gold" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-text-primary">Getting Started</p>
+              <p className="text-xs text-text-muted">Complete these steps to set up your tailoring studio</p>
+            </div>
+          </div>
+          <ol className="space-y-2.5">
+            {[
+              { step: '1', label: 'Add your first customer', desc: 'Go to Customers → New Customer', action: () => navigate('/customers') },
+              { step: '2', label: 'Take measurements', desc: 'Record chest, waist, hips and more', action: () => navigate('/customers') },
+              { step: '3', label: 'Generate a pattern', desc: 'Choose garment type and let the engine do the work', action: () => navigate('/patterns/new') },
+              { step: '4', label: 'Export and print', desc: 'PDF or SVG — print at home or send to the workshop', action: () => navigate('/patterns/new') },
+            ].map(item => (
+              <li key={item.step} className="flex items-start gap-3">
+                <div className="w-5 h-5 rounded-full bg-brand-navy flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-[9px] font-bold text-white">{item.step}</span>
+                </div>
+                <button type="button" onClick={item.action} className="text-left group">
+                  <p className="text-xs font-semibold text-text-primary group-hover:text-brand-mid transition-colors">{item.label}</p>
+                  <p className="text-[10px] text-text-muted">{item.desc}</p>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </motion.div>
+      )}
 
       {/* Sync status */}
       {pendingSync > 0 && (
