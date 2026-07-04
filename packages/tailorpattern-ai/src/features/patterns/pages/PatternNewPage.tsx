@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Users, Zap, Info } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -14,6 +14,7 @@ import { useCustomers } from '../../customers/hooks/useCustomers'
 import { useMeasurements } from '../../measurements/hooks/useMeasurements'
 import { useCreatePatternProject } from '../hooks/usePatternProjects'
 import { usePatternGenerator } from '../hooks/usePatternGenerator'
+import { usePhotoAnalysis } from '../hooks/usePhotoAnalysis'
 import { updatePatternInputMethod } from '../services/patternService'
 import { Avatar } from '../../../shared/components/ui/Avatar'
 import { cn } from '../../../shared/utils/cn'
@@ -60,6 +61,14 @@ export function PatternNewPage(): JSX.Element {
   const { data: measurements } = useMeasurements(selectedCustomerId)
   const createProject = useCreatePatternProject()
   const generateMutation = usePatternGenerator(createdProjectId ?? '')
+  const { status: analysisStatus, result: analysisResult, error: analysisError, analyzePhoto, reset: resetAnalysis } = usePhotoAnalysis()
+
+  useEffect(() => {
+    if (analysisResult?.type === 'garment-photo') {
+      const ep = analysisResult.data.easePreference
+      if (ep) setStyleParams(prev => ({ ...prev, easePreference: ep }))
+    }
+  }, [analysisResult])
 
   const selectedCustomer = customers?.find(c => c.id === selectedCustomerId)
   const selectedMeasurement = measurements?.find(m => m.id === selectedMeasurementId)
@@ -288,12 +297,16 @@ export function PatternNewPage(): JSX.Element {
           {((mode === 'customer' && step === 2) || (mode === 'standalone' && step === 1)) && (
             <InputMethodSelector
               value={inputMethod}
-              onChange={setInputMethod}
+              onChange={(m) => { setInputMethod(m); resetAnalysis() }}
               notes={inputMethodNotes}
               onNotesChange={setInputMethodNotes}
               fileDataUrl={inputMethodFileDataUrl}
-              onFileChange={setInputMethodFileDataUrl}
+              onFileChange={(url) => { setInputMethodFileDataUrl(url); if (!url) resetAnalysis() }}
               onSketchSave={setInputMethodSketchDataUrl}
+              onAnalyze={analyzePhoto}
+              analysisStatus={analysisStatus}
+              analysisResult={analysisResult}
+              analysisError={analysisError}
             />
           )}
 
