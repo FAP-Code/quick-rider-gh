@@ -100,8 +100,42 @@ export async function exportPatternToPDF(
     yPos += 8
   })
 
-  // Piece list
+  // Key measurements summary
+  yPos += 4
+  pdf.setTextColor(26, 26, 46)
+  pdf.setFontSize(9)
+  pdf.setFont('helvetica', 'bold')
+  pdf.text('Key Measurements', col1, yPos)
   yPos += 5
+
+  const keyMeasFields: [string, keyof typeof measurements][] = [
+    ['Chest / Bust', 'chest'], ['Waist', 'waist'], ['Hips', 'hips'],
+    ['Shoulder Width', 'shoulderWidth'], ['Back Length', 'backBodyLength'],
+    ['Sleeve Length', 'sleeveLength'], ['Inseam', 'trouserInseam'],
+  ]
+
+  const filledKeys = keyMeasFields.filter(([, k]) => measurements[k] !== undefined)
+  const cols = 3
+  filledKeys.forEach(([label, key], i) => {
+    const colIdx = i % cols
+    const colX = col1 + colIdx * (CONTENT_W / cols)
+    if (colIdx === 0 && i > 0) yPos += 5
+    pdf.setFontSize(7)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setTextColor(107, 114, 128)
+    pdf.text(label, colX, yPos)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(26, 26, 46)
+    pdf.text(`${measurements[key]}${measurements.unit}`, colX + 28, yPos)
+  })
+  yPos += 8
+
+  // Separator
+  pdf.setDrawColor(230, 232, 240)
+  pdf.line(col1, yPos, col1 + CONTENT_W, yPos)
+  yPos += 6
+
+  // Piece list
   pdf.setTextColor(26, 26, 46)
   pdf.setFontSize(10)
   pdf.setFont('helvetica', 'bold')
@@ -112,7 +146,14 @@ export async function exportPatternToPDF(
     pdf.setFontSize(8)
     pdf.setFont('helvetica', 'normal')
     pdf.setTextColor(45, 45, 45)
+    const keyMeas = piece.keyMeasurements?.join('  ') ?? ''
     pdf.text(`${i + 1}. ${piece.name}  ×${piece.quantity ?? 1}`, col1 + 3, yPos)
+    if (keyMeas) {
+      pdf.setFontSize(6)
+      pdf.setTextColor(107, 114, 128)
+      pdf.text(keyMeas, col1 + 8, yPos + 4)
+      yPos += 4
+    }
     yPos += 5
   })
 

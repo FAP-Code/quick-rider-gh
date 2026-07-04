@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Download, RefreshCw, ImageIcon, FileText } from 'lucide-react'
+import { ArrowLeft, Download, RefreshCw, ImageIcon, FileText, Code2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '../../../shared/components/ui/Button'
 import { Badge } from '../../../shared/components/ui/Badge'
@@ -11,6 +11,7 @@ import { SewingVideoPanel } from '../components/SewingVideoPanel'
 import { Skeleton } from '../../../shared/components/ui/Skeleton'
 import { usePatternProject } from '../hooks/usePatternProjects'
 import { usePDFExport } from '../hooks/usePDFExport'
+import { useSVGExport } from '../hooks/useSVGExport'
 import { useCustomer } from '../../customers/hooks/useCustomers'
 import { useMeasurement } from '../../measurements/hooks/useMeasurements'
 import { formatDate } from '../../../shared/utils/format'
@@ -31,6 +32,7 @@ export function PatternDetailPage(): JSX.Element {
   const { data: customer } = useCustomer(project?.customerId ?? '')
   const { data: measurementSet } = useMeasurement(project?.measurementSetId ?? '')
   const pdfExport = usePDFExport()
+  const svgExport = useSVGExport()
 
   if (isLoading) {
     return (
@@ -117,6 +119,20 @@ export function PatternDetailPage(): JSX.Element {
             </Button>
             <Button
               variant="secondary"
+              size="sm"
+              leftIcon={<Code2 size={14} />}
+              disabled={!patternData || svgExport.isPending}
+              loading={svgExport.isPending}
+              onClick={() => {
+                if (patternData) {
+                  void svgExport.mutateAsync({ patternData, projectName: project.name })
+                }
+              }}
+            >
+              Export SVG
+            </Button>
+            <Button
+              variant="ghost"
               size="sm"
               leftIcon={<RefreshCw size={14} />}
               onClick={() => navigate('/patterns/new')}
