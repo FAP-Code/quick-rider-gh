@@ -6,6 +6,7 @@ import { Input } from '../../../shared/components/ui/Input'
 import { Textarea } from '../../../shared/components/ui/Textarea'
 import { Button } from '../../../shared/components/ui/Button'
 import { MeasurementField } from './MeasurementField'
+import { MeasurementProgressBar } from './MeasurementProgressBar'
 import { MeasurementFormSchema, type MeasurementFormData } from '../types/measurement.types'
 import { MEASUREMENT_SECTIONS_MAP } from '../engine/constants'
 import { validateMeasurements } from '../engine/validation'
@@ -15,6 +16,7 @@ interface MeasurementFormProps {
   isSubmitting?: boolean
   onCancel?: () => void
   defaultValues?: Partial<MeasurementFormData>
+  onSectionChange?: (section: string) => void
 }
 
 export function MeasurementForm({
@@ -22,6 +24,7 @@ export function MeasurementForm({
   isSubmitting,
   onCancel,
   defaultValues,
+  onSectionChange,
 }: MeasurementFormProps): JSX.Element {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     'Upper Body': true,
@@ -49,7 +52,9 @@ export function MeasurementForm({
   const warningMap = Object.fromEntries(warnings.map(w => [w.field, w.message]))
 
   const toggleSection = (section: string): void => {
-    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }))
+    const willOpen = !openSections[section]
+    setOpenSections(prev => ({ ...prev, [section]: willOpen }))
+    if (willOpen) onSectionChange?.(section)
   }
 
   return (
@@ -134,6 +139,8 @@ export function MeasurementForm({
           </ul>
         </div>
       )}
+
+      <MeasurementProgressBar measurements={measurements} />
 
       <div className="flex gap-2">
         {onCancel && (

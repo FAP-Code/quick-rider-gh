@@ -9,6 +9,7 @@ import { Skeleton } from '../../../shared/components/ui/Skeleton'
 import { CustomerForm } from '../components/CustomerForm'
 import { useCustomer } from '../hooks/useCustomers'
 import { useUpdateCustomer } from '../hooks/useCustomerMutations'
+import { usePatternProjectsByCustomer } from '../../patterns/hooks/usePatternProjects'
 import type { CustomerFormData } from '../types/customer.types'
 
 type Tab = 'overview' | 'measurements' | 'patterns' | 'notes'
@@ -21,6 +22,13 @@ export function CustomerDetailPage(): JSX.Element {
 
   const { data: customer, isLoading } = useCustomer(id)
   const updateMutation = useUpdateCustomer(id)
+  const { data: customerPatterns } = usePatternProjectsByCustomer(id)
+
+  // Find the most recent customer-photo reference for the measurement assistant
+  const latestPhotoUrl = customerPatterns
+    ?.filter(p => p.inputMethod === 'customer-photo' && p.photoReferenceUrl)
+    .at(0)
+    ?.photoReferenceUrl ?? null
 
   if (isLoading) {
     return (
@@ -149,7 +157,10 @@ export function CustomerDetailPage(): JSX.Element {
       {activeTab === 'measurements' && (
         <div className="space-y-3">
           <Button
-            onClick={() => navigate(`/measurements/new/${customer.id}`)}
+            onClick={() => navigate(
+              `/measurements/new/${customer.id}`,
+              latestPhotoUrl ? { state: { photoUrl: latestPhotoUrl } } : undefined,
+            )}
             leftIcon={<Plus size={16} />}
             variant="secondary"
             size="sm"

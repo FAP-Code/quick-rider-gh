@@ -315,7 +315,12 @@ export function PatternNewPage(): JSX.Element {
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => navigate(`/measurements/new/${selectedCustomerId}`)}
+                    onClick={() => navigate(
+                      `/measurements/new/${selectedCustomerId}`,
+                      inputMethod === 'customer-photo' && inputMethodFileDataUrl
+                        ? { state: { photoUrl: inputMethodFileDataUrl } }
+                        : undefined,
+                    )}
                   >
                     Take Measurements Now
                   </Button>

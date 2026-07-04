@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/useAuth'
 import {
   getPatternProjects,
   getPatternProject,
+  getPatternProjectsByCustomer,
   createPatternProject,
 } from '../services/patternService'
 import type { GarmentType, StyleParameters } from '../types/pattern.types'
@@ -15,6 +16,14 @@ export function usePatternProjects() {
   return useQuery({
     queryKey: [PATTERNS_KEY, businessId],
     queryFn: () => getPatternProjects(businessId),
+  })
+}
+
+export function usePatternProjectsByCustomer(customerId: string) {
+  return useQuery({
+    queryKey: [PATTERNS_KEY, 'customer', customerId],
+    queryFn: () => getPatternProjectsByCustomer(customerId),
+    enabled: Boolean(customerId),
   })
 }
 
