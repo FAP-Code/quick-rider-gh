@@ -6,8 +6,9 @@ import {
   getPatternProject,
   getPatternProjectsByCustomer,
   createPatternProject,
+  updatePatternStatus,
 } from '../services/patternService'
-import type { GarmentType, StyleParameters } from '../types/pattern.types'
+import type { GarmentType, StyleParameters, PatternProject } from '../types/pattern.types'
 
 export const PATTERNS_KEY = 'patterns'
 
@@ -32,6 +33,19 @@ export function usePatternProject(id: string) {
     queryKey: [PATTERNS_KEY, id],
     queryFn: () => getPatternProject(id),
     enabled: Boolean(id),
+  })
+}
+
+export function useUpdatePatternStatus(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (status: PatternProject['status']) => updatePatternStatus(id, status),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [PATTERNS_KEY, id] })
+      void qc.invalidateQueries({ queryKey: [PATTERNS_KEY] })
+      toast.success('Pattern status updated')
+    },
+    onError: () => toast.error('Failed to update status'),
   })
 }
 

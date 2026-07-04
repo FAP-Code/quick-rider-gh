@@ -1,10 +1,11 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Download, RefreshCw, ImageIcon, FileText } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '../../../shared/components/ui/Button'
 import { Badge } from '../../../shared/components/ui/Badge'
 import { PatternSVGPreview } from '../components/PatternSVGPreview'
 import { PatternLegend } from '../components/PatternLegend'
+import { PatternStatusWorkflow } from '../components/PatternStatusWorkflow'
 import { Skeleton } from '../../../shared/components/ui/Skeleton'
 import { usePatternProject } from '../hooks/usePatternProjects'
 import { usePDFExport } from '../hooks/usePDFExport'
@@ -12,7 +13,6 @@ import { useCustomer } from '../../customers/hooks/useCustomers'
 import { useMeasurement } from '../../measurements/hooks/useMeasurements'
 import { formatDate } from '../../../shared/utils/format'
 import type { PatternData } from '../types/pattern.types'
-import { useParams } from 'react-router-dom'
 
 const STATUS_BADGES: Record<string, { variant: 'success' | 'warning' | 'info' | 'gold' | 'default'; label: string }> = {
   draft: { variant: 'warning', label: 'Draft' },
@@ -124,6 +124,9 @@ export function PatternDetailPage(): JSX.Element {
           </div>
         </div>
       </div>
+
+      {/* Status workflow */}
+      <PatternStatusWorkflow project={project} />
 
       {/* Pattern preview + legend */}
       {patternData ? (
