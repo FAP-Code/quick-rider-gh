@@ -6,6 +6,7 @@ import { Badge } from '../../../shared/components/ui/Badge'
 import { PatternSVGPreview } from '../components/PatternSVGPreview'
 import { PatternLegend } from '../components/PatternLegend'
 import { PatternStatusWorkflow } from '../components/PatternStatusWorkflow'
+import { SewingInstructorPanel } from '../components/SewingInstructorPanel'
 import { Skeleton } from '../../../shared/components/ui/Skeleton'
 import { usePatternProject } from '../hooks/usePatternProjects'
 import { usePDFExport } from '../hooks/usePDFExport'
@@ -195,6 +196,9 @@ export function PatternDetailPage(): JSX.Element {
           <p className="text-sm text-text-body whitespace-pre-line">{project.notes}</p>
         </div>
       )}
+
+      {/* AI Sewing Instructor */}
+      <SewingInstructorPanel garmentType={project.garmentType} />
     </motion.div>
   )
 }
