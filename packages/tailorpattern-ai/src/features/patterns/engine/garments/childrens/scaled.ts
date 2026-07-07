@@ -1,0 +1,182 @@
+import type { EngineInput, EngineOutput } from '../../types'
+import { cm } from '../../types'
+import type { PatternPiece, PatternPath } from '../../../types/pattern.types'
+import { generateId } from '../../../../../shared/utils/uuid'
+import { buildSeamLine } from '../../utils/seamAllowance'
+
+// Children's patterns derived from adult blocks with age-based scaling
+// Scale factors based on standard children's sizing charts
+const AGE_CHEST: Record<number, number> = {
+  2: 53, 3: 55, 4: 57, 5: 59, 6: 62, 7: 65,
+  8: 68, 9: 70, 10: 73, 11: 76, 12: 79, 14: 83,
+}
+
+const AGE_HEIGHT: Record<number, number> = {
+  2: 92, 3: 99, 4: 105, 5: 112, 6: 118, 7: 124,
+  8: 130, 9: 135, 10: 140, 11: 146, 12: 151, 14: 158,
+}
+
+export function generateChildrensGarment(garmentType: string, input: EngineInput): EngineOutput {
+  const { measurements: m, params, seamAllowance: sa } = input
+  const warnings: string[] = []
+  const age = params.childAge ?? 8
+
+  // Use measured values if provided, else lookup by age
+  const chest = m.chest ?? (AGE_CHEST[age] ?? 68)
+  const height = m.trouserOutseam ?? (AGE_HEIGHT[age] ?? 130)
+
+  if (!m.chest) {
+    warnings.push(`Using standard chest size for age ${age}: ${chest}cm`)
+  }
+
+  const ease = 6 // children use moderate ease
+  const bodyW = cm((chest + ease) / 4)
+  const bodyLength = cm(height * 0.27) // back body length ~27% of height
+  const sleeveLen = cm(height * 0.33)
+  const neckW = cm(chest / 10)
+  const armholeD = cm(chest / 6 + 2)
+
+  if (garmentType === 'childrens-shirt') {
+    const backOutline: PatternPath = {
+      isClosed: true, isSeamLine: false,
+      points: [
+        { x: 0, y: 0 },
+        { x: neckW, y: -1.5 },
+        { x: cm(bodyW + 1), y: -(armholeD * 0.05) },
+        { x: cm(bodyW + 2), y: armholeD },
+        { x: cm(bodyW + 2), y: cm(bodyLength + height * 0.1) },
+        { x: 0, y: cm(bodyLength + height * 0.1) },
+      ],
+    }
+    const back: PatternPiece = {
+      id: generateId(), name: 'Back (Children)',
+      color: '#1A1A2E', quantity: 1, mirror: false,
+      outline: backOutline,
+      seamLine: buildSeamLine(backOutline, sa),
+      foldLine: { isClosed: false, isFoldLine: true, points: [{ x: 0, y: 0 }, { x: 0, y: cm(bodyLength + height * 0.1) }] },
+      grainLine: { start: { x: 1, y: 5 }, end: { x: 1, y: cm(bodyLength + height * 0.08) } },
+      annotations: [
+        { position: { x: bodyW, y: bodyLength / 2 }, label: `BACK Age ${age}` },
+        { position: { x: bodyW, y: bodyLength * 0.8 }, label: `Chest: ${chest}cm` },
+      ],
+      keyMeasurements: [`Chest: ${chest}cm`, `Age: ${age}`],
+    }
+    // Destructure to exclude foldLine — front is cut in pairs, needs no fold line
+    const { foldLine: _f, ...backBase } = back
+    const front: PatternPiece = {
+      ...backBase,
+      id: generateId(),
+      name: 'Front (Children)',
+      color: '#0F3460',
+      quantity: 2,
+      mirror: true,
+      annotations: [{ position: { x: bodyW, y: bodyLength / 2 }, label: `FRONT Age ${age}` }],
+    }
+    const sleeveOutline: PatternPath = {
+      isClosed: true, isSeamLine: false,
+      points: [
+        { x: 0, y: 0 },
+        { x: cm(chest / 8 + 2), y: cm(armholeD * 0.55) },
+        { x: cm(chest / 8), y: sleeveLen },
+        { x: -cm(chest / 8), y: sleeveLen },
+        { x: -cm(chest / 8 + 2), y: cm(armholeD * 0.55) },
+      ],
+    }
+    const sleeve: PatternPiece = {
+      id: generateId(), name: 'Sleeve (Children)',
+      color: '#C9A84C', quantity: 2, mirror: false,
+      outline: sleeveOutline,
+      seamLine: buildSeamLine(sleeveOutline, sa),
+      grainLine: { start: { x: 0, y: armholeD * 0.55 + 3 }, end: { x: 0, y: sleeveLen - 3 } },
+      annotations: [{ position: { x: 0, y: sleeveLen / 2 }, label: 'SLEEVE (Children)' }],
+      keyMeasurements: [`Sleeve length: ${sleeveLen}cm`],
+    }
+    return { pieces: [back, front, sleeve], warnings }
+  }
+
+  // Children's dress — bodice + gathered skirt
+  if (garmentType === 'childrens-dress') {
+    const bodiceBackOutline: PatternPath = {
+      isClosed: true, isSeamLine: false,
+      points: [
+        { x: 0, y: 0 },
+        { x: neckW, y: -1.5 },
+        { x: cm(bodyW + 1), y: -(armholeD * 0.05) },
+        { x: cm(bodyW + 2), y: armholeD },
+        { x: cm(bodyW + 2), y: bodyLength },
+        { x: 0, y: bodyLength },
+      ],
+    }
+    const bodiceBack: PatternPiece = {
+      id: generateId(), name: 'Bodice Back (Children)',
+      color: '#1A1A2E', quantity: 1, mirror: false,
+      outline: bodiceBackOutline,
+      seamLine: buildSeamLine(bodiceBackOutline, sa),
+      foldLine: { isClosed: false, isFoldLine: true, points: [{ x: 0, y: 0 }, { x: 0, y: bodyLength }] },
+      grainLine: { start: { x: 1, y: 5 }, end: { x: 1, y: bodyLength - 3 } },
+      annotations: [{ position: { x: bodyW, y: bodyLength / 2 }, label: `BODICE BACK Age ${age}` }],
+      keyMeasurements: [`Chest: ${chest}cm`, `Age: ${age}`],
+    }
+    const { foldLine: _fb, ...bodiceBackBase } = bodiceBack
+    const bodiceFront: PatternPiece = {
+      ...bodiceBackBase,
+      id: generateId(),
+      name: 'Bodice Front (Children)',
+      color: '#0F3460',
+      quantity: 2,
+      mirror: true,
+      annotations: [{ position: { x: bodyW, y: bodyLength / 2 }, label: `BODICE FRONT Age ${age}` }],
+    }
+    const skirtLength = cm(height * 0.38)
+    const skirtOutline: PatternPath = {
+      isClosed: true, isSeamLine: false,
+      points: [
+        { x: 0, y: 0 },
+        { x: cm((chest + ease) / 2 * 1.5), y: 0 },
+        { x: cm((chest + ease) / 2 * 1.5), y: skirtLength },
+        { x: 0, y: skirtLength },
+      ],
+    }
+    const skirt: PatternPiece = {
+      id: generateId(), name: 'Skirt (Children)',
+      color: '#C9A84C', quantity: 2, mirror: false,
+      outline: skirtOutline,
+      seamLine: buildSeamLine(skirtOutline, sa),
+      grainLine: { start: { x: cm((chest + ease) / 4), y: 5 }, end: { x: cm((chest + ease) / 4), y: skirtLength - 5 } },
+      annotations: [{ position: { x: cm((chest + ease) / 4), y: skirtLength / 2 }, label: `SKIRT (Children) Age ${age}` }],
+      keyMeasurements: [`Length: ${skirtLength}cm`],
+    }
+    return { pieces: [bodiceBack, bodiceFront, skirt], warnings }
+  }
+
+  // Children's trouser — simplified
+  const trouserFrontOutline: PatternPath = {
+    isClosed: true, isSeamLine: false,
+    points: [
+      { x: 0, y: 0 },
+      { x: cm((chest + 10) / 4), y: 0 },
+      { x: cm((chest + 14) / 4), y: cm(height * 0.16) },
+      { x: cm((chest + 12) / 4), y: cm(height * 0.65) },
+      { x: cm((chest + 8) / 4), y: cm(height * 0.65) },
+      { x: 0, y: cm(height * 0.65) },
+    ],
+  }
+  const trouserFront: PatternPiece = {
+    id: generateId(), name: 'Front Trouser (Children)',
+    color: '#1A1A2E', quantity: 2, mirror: true,
+    outline: trouserFrontOutline,
+    seamLine: buildSeamLine(trouserFrontOutline, sa),
+    grainLine: { start: { x: cm((chest + 10) / 8), y: 5 }, end: { x: cm((chest + 10) / 8), y: cm(height * 0.6) } },
+    annotations: [{ position: { x: cm((chest + 10) / 8), y: cm(height * 0.3) }, label: `FRONT TROUSER Age ${age}` }],
+    keyMeasurements: [`Height: ${height}cm`, `Age: ${age}`],
+  }
+  const trouserBack: PatternPiece = {
+    ...trouserFront,
+    id: generateId(),
+    name: 'Back Trouser (Children)',
+    color: '#0F3460',
+    annotations: [{ position: { x: cm((chest + 10) / 8), y: cm(height * 0.3) }, label: `BACK TROUSER Age ${age}` }],
+  }
+
+  return { pieces: [trouserFront, trouserBack], warnings }
+}

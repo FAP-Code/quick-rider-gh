@@ -1,0 +1,45 @@
+# TailorPattern AI — Netlify deploy config
+# Deploy this as a separate Netlify site pointed at the repo root.
+# Netlify reads this file because [build].base tells it to work from this package.
+
+[build]
+  base    = "packages/tailorpattern-ai"
+  command = "npm install && npm run build"
+  publish = "packages/tailorpattern-ai/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA: all paths fall through to index.html so React Router can handle them
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+# Security headers for every response
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+    Permissions-Policy     = "camera=(), microphone=(), geolocation=()"
+
+# Hashed JS/CSS assets — safe to cache for 1 year
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Service worker must be re-fetched every visit so updates install quickly
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# PWA manifest
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type  = "application/manifest+json"
+    Cache-Control = "public, max-age=3600"

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#1A1A2E"/>
+  <!-- Shield -->
+  <path d="M256 72 L400 124 L400 276 Q400 388 256 444 Q112 388 112 276 L112 124 Z" fill="#C9A84C"/>
+  <!-- Checkmark -->
+  <path d="M186 268 L232 316 L326 208" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
