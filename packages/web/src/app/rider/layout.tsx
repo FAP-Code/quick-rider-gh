@@ -3,19 +3,22 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/auth-store';
-import { LayoutDashboard, Briefcase, DollarSign, User, LogOut, Bell, Star, Settings, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, Briefcase, DollarSign, User, LogOut, Bell, Star, Settings, ShieldAlert, Trophy, Fuel, CalendarClock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
 const NAV = [
-  { href: '/rider',              label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/rider/jobs',         label: 'My Jobs',       icon: Briefcase       },
-  { href: '/rider/earnings',     label: 'Earnings',      icon: DollarSign      },
-  { href: '/rider/ratings',      label: 'Ratings',       icon: Star            },
-  { href: '/rider/notifications',label: 'Notifications', icon: Bell            },
-  { href: '/rider/profile',      label: 'Profile',       icon: User            },
-  { href: '/rider/settings',     label: 'Settings',      icon: Settings        },
-  { href: '/rider/sos',          label: 'SOS',           icon: ShieldAlert     },
+  { href: '/rider',                label: 'Dashboard',    icon: LayoutDashboard },
+  { href: '/rider/jobs',           label: 'My Jobs',      icon: Briefcase       },
+  { href: '/rider/earnings',       label: 'Earnings',     icon: DollarSign      },
+  { href: '/rider/gamification',   label: 'Achievements', icon: Trophy          },
+  { href: '/rider/fuel',           label: 'Fuel Log',     icon: Fuel            },
+  { href: '/rider/schedule',       label: 'Schedule',     icon: CalendarClock   },
+  { href: '/rider/ratings',        label: 'Ratings',      icon: Star            },
+  { href: '/rider/notifications',  label: 'Notifications',icon: Bell            },
+  { href: '/rider/profile',        label: 'Profile',      icon: User            },
+  { href: '/rider/settings',       label: 'Settings',     icon: Settings        },
+  { href: '/rider/sos',            label: 'SOS',          icon: ShieldAlert     },
 ];
 
 export default function RiderLayout({ children }: { children: React.ReactNode }) {

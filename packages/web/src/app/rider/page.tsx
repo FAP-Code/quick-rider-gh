@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthStore } from '@/lib/auth-store';
-import { MapPin, Navigation, Package, Star, DollarSign, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { MapPin, Navigation, Package, Star, DollarSign, CheckCircle, XCircle, Clock, Trophy } from 'lucide-react';
 
 export default function RiderDashboard() {
   const user = useAuthStore(s => s.user);
@@ -43,6 +43,12 @@ export default function RiderDashboard() {
 
   const isOnline = profile?.availabilityStatus === 'ONLINE';
 
+  const { data: gameData } = useQuery<{ data: any }>({
+    queryKey: ['rider-game-stats'],
+    queryFn: () => api.get('/rider/game-stats'),
+  });
+  const g = gameData?.data ?? gameData ?? {};
+
   const STATUS_COLOR: Record<string, string> = {
     PENDING:   'bg-yellow-100 text-yellow-700',
     ACCEPTED:  'bg-blue-100 text-blue-700',
@@ -63,6 +69,21 @@ export default function RiderDashboard() {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
+      {/* Gamification mini-card */}
+      {(g.currentStreak > 0 || g.monthlyDeliveries > 0) && (
+        <Link href="/rider/gamification"
+          className="flex items-center justify-between bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-2xl px-5 py-3.5 shadow-sm hover:from-orange-600 hover:to-amber-600 transition-colors">
+          <div className="flex items-center gap-3">
+            <Trophy size={20} className="flex-shrink-0" />
+            <p className="text-sm font-semibold">
+              {g.currentStreak > 0 ? `🔥 ${g.currentStreak}-day streak · ` : ''}
+              {g.monthlyDeliveries ?? g.totalDeliveries ?? 0} deliveries this month
+            </p>
+          </div>
+          <span className="text-white/80 text-xs font-medium">View achievements →</span>
+        </Link>
+      )}
+
       {/* Greeting + Online toggle */}
       <div className="bg-gray-900 text-white rounded-2xl p-6 flex items-center justify-between">
         <div>

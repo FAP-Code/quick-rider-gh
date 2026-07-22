@@ -106,6 +106,47 @@ export function initSocketServer(httpServer: Server): SocketServer {
       });
     });
 
+    // WebRTC signalling for peer-to-peer calls
+    socket.on('webrtc:join', (data: { orderId: string; role: string }) => {
+      socket.join(`webrtc:${data.orderId}`);
+      socket.to(`webrtc:${data.orderId}`).emit('webrtc:peer-joined', { role: data.role });
+    });
+
+    socket.on('webrtc:offer', (data: { sdp: RTCSessionDescriptionInit; orderId: string; role: string }) => {
+      socket.to(`webrtc:${data.orderId}`).emit('webrtc:offer', { sdp: data.sdp, from: data.role });
+    });
+
+    socket.on('webrtc:answer', (data: { sdp: RTCSessionDescriptionInit; orderId: string; role: string }) => {
+      socket.to(`webrtc:${data.orderId}`).emit('webrtc:answer', { sdp: data.sdp, from: data.role });
+    });
+
+    socket.on('webrtc:ice', (data: { candidate: RTCIceCandidateInit; orderId: string }) => {
+      socket.to(`webrtc:${data.orderId}`).emit('webrtc:ice', { candidate: data.candidate });
+    });
+
+    socket.on('webrtc:hangup', (data: { orderId: string }) => {
+      socket.to(`webrtc:${data.orderId}`).emit('webrtc:hangup');
+    });
+
+    // Geofence check — rider reports location; server checks if within 500m of dropoff
+    socket.on('geofence:check', async (data: { orderId: string; latitude: number; longitude: number }) => {
+      const order = await prisma.order.findUnique({ where: { id: data.orderId } });
+      if (!order || order.geofenceAlerted) return;
+      const R = 6371000;
+      const dLat = (data.latitude - order.destinationLatitude) * Math.PI / 180;
+      const dLng = (data.longitude - order.destinationLongitude) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(order.destinationLatitude * Math.PI/180) * Math.cos(data.latitude * Math.PI/180) * Math.sin(dLng/2)**2;
+      const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      if (dist <= 500) {
+        await prisma.order.update({ where: { id: data.orderId }, data: { geofenceAlerted: true } });
+        io.to(`user:${order.customerId}`).emit('geofence:nearby', {
+          orderId: data.orderId,
+          message: 'Your rider is almost there! 🏍️',
+          distanceMeters: Math.round(dist),
+        });
+      }
+    });
+
     socket.on('disconnect', () => {
       connectedUsers.delete(userId);
       if (role === 'RIDER') {

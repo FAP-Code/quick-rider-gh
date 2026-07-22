@@ -5,17 +5,19 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
-import { Home, Package, Wallet, User, LogOut, Bell, PlusCircle, MapPin, Bike, Settings } from 'lucide-react';
+import { Home, Package, Wallet, User, LogOut, Bell, PlusCircle, MapPin, Bike, Settings, CreditCard, Store, Leaf } from 'lucide-react';
 
 const NAV = [
-  { href: '/customer',          label: 'Home',      icon: Home       },
-  { href: '/customer/request',  label: 'Request',   icon: PlusCircle },
-  { href: '/customer/orders',   label: 'Orders',    icon: Package    },
-  { href: '/customer/riders',   label: 'Riders',    icon: Bike       },
-  { href: '/customer/addresses',label: 'Addresses', icon: MapPin     },
-  { href: '/customer/wallet',   label: 'Payments',  icon: Wallet     },
-  { href: '/customer/profile',  label: 'Profile',   icon: User       },
-  { href: '/customer/settings', label: 'Settings',  icon: Settings   },
+  { href: '/customer',              label: 'Home',         icon: Home       },
+  { href: '/customer/request',      label: 'Request',      icon: PlusCircle },
+  { href: '/customer/orders',       label: 'Orders',       icon: Package    },
+  { href: '/customer/riders',       label: 'Riders',       icon: Bike       },
+  { href: '/customer/addresses',    label: 'Addresses',    icon: MapPin     },
+  { href: '/customer/wallet',       label: 'Payments',     icon: Wallet     },
+  { href: '/customer/subscription', label: 'Pass',         icon: CreditCard },
+  { href: '/merchant',              label: 'Merchant',     icon: Store      },
+  { href: '/customer/profile',      label: 'Profile',      icon: User       },
+  { href: '/customer/settings',     label: 'Settings',     icon: Settings   },
 ];
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {

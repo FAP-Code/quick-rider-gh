@@ -15,6 +15,7 @@ import userRoutes from './routes/user.routes';
 import riderRoutes from './routes/rider.routes';
 import orderRoutes from './routes/order.routes';
 import adminRoutes from './routes/admin.routes';
+import featuresRoutes from './routes/features.routes';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -62,6 +63,7 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/riders', riderRoutes);
 app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1', featuresRoutes);
 
 // 404 + error handlers
 app.use(notFoundHandler);

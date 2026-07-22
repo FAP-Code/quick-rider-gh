@@ -97,7 +97,37 @@ enum NotificationType {
   ACCOUNT_SUSPENDED
   NEW_MESSAGE
   SOS_ALERT
+  GEOFENCE_ALERT
+  POOL_MATCH
+  BADGE_EARNED
+  SUBSCRIPTION_RENEWAL
+  MERCHANT_ORDER
   SYSTEM
+}
+
+enum BadgeType {
+  STREAK_3
+  STREAK_7
+  STREAK_30
+  DELIVERIES_10
+  DELIVERIES_50
+  DELIVERIES_100
+  DELIVERIES_500
+  TOP_RATED
+  FAST_RIDER
+  VETERAN
+}
+
+enum PoolStatus {
+  OPEN
+  MATCHED
+  CLOSED
+}
+
+enum MerchantStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
 }
 
 enum ReportType {
@@ -146,6 +176,9 @@ model User {
   reportedIn        Report[]       @relation("ReportedReports")
   otpCodes          OtpCode[]
   refreshTokens     RefreshToken[]
+  subscription      Subscription?
+  merchantProfile   MerchantProfile?
+  fraudFlags        FraudFlag[]
 
   @@map("users")
 }
@@ -178,6 +211,10 @@ model Rider {
   adminNotes            String?
   approvedAt            DateTime?
   approvedBy            String?
+  currentStreak         Int                @default(0)
+  longestStreak         Int                @default(0)
+  lastDeliveryDate      DateTime?
+  totalCarbonSaved      Float              @default(0)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
@@ -185,6 +222,9 @@ model Rider {
   orders                Order[]            @relation("RiderOrders")
   transactions          Transaction[]
   withdrawalRequests    WithdrawalRequest[]
+  badges                RiderBadge[]
+  fuelExpenses          FuelExpense[]
+  schedule              RiderSchedule?
 
   @@map("riders")
 }
@@ -227,6 +267,19 @@ model Order {
   deliveredAt           DateTime?
   completedAt           DateTime?
   cancelledAt           DateTime?
+  deliveryPin           String?
+  pinVerified           Boolean       @default(false)
+  carbonSavedKg         Float?
+  etaMinLow             Int?
+  etaMinHigh            Int?
+  poolId                String?
+  stops                 Json?
+  isMultiStop           Boolean       @default(false)
+  ghanaPostPickup       String?
+  ghanaPostDropoff      String?
+  geofenceAlerted       Boolean       @default(false)
+  fraudScore            Int           @default(0)
+  proofImageUrl         String?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
@@ -235,6 +288,9 @@ model Order {
   ratings               Rating[]
   payment               Payment?
   statusHistory         OrderStatusHistory[]
+  orderEvents           OrderEvent[]
+  trackingLinks         TrackingLink[]
+  pool                  DeliveryPool? @relation(fields: [poolId], references: [id])
 
   @@map("orders")
 }
@@ -423,4 +479,161 @@ model SystemConfig {
   updatedAt DateTime @updatedAt
 
   @@map("system_configs")
+}
+
+// ─── Feature Models ───────────────────────────────────────────────────────────
+
+model OrderEvent {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  event     String
+  actorId   String?
+  actorRole String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@map("order_events")
+}
+
+model TrackingLink {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  token      String   @unique
+  expiresAt  DateTime
+  viewCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@map("tracking_links")
+}
+
+model FraudFlag {
+  id        String   @id @default(uuid())
+  orderId   String?
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  score     Int
+  signals   Json
+  reviewed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("fraud_flags")
+}
+
+model RiderBadge {
+  id        String    @id @default(uuid())
+  riderId   String
+  rider     Rider     @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  badge     BadgeType
+  awardedAt DateTime  @default(now())
+
+  @@unique([riderId, badge])
+  @@map("rider_badges")
+}
+
+model FuelExpense {
+  id        String   @id @default(uuid())
+  riderId   String
+  rider     Rider    @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  amount    Decimal  @db.Decimal(10, 2)
+  litres    Float?
+  location  String?
+  note      String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@map("fuel_expenses")
+}
+
+model RiderSchedule {
+  id        String   @id @default(uuid())
+  riderId   String   @unique
+  rider     Rider    @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  schedule  Json
+  updatedAt DateTime @updatedAt
+
+  @@map("rider_schedules")
+}
+
+model Subscription {
+  id               String   @id @default(uuid())
+  customerId       String   @unique
+  customer         User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plan             String
+  deliveriesTotal  Int
+  deliveriesUsed   Int      @default(0)
+  amountPaid       Decimal  @db.Decimal(10, 2)
+  startDate        DateTime
+  endDate          DateTime
+  active           Boolean  @default(true)
+  autoRenew        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+model DeliveryPool {
+  id          String     @id @default(uuid())
+  status      PoolStatus @default(OPEN)
+  pickupArea  String
+  pickupLat   Float
+  pickupLng   Float
+  riderId     String?
+  maxOrders   Int        @default(2)
+  savingsPct  Float      @default(30)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  orders      Order[]
+
+  @@map("delivery_pools")
+}
+
+model MerchantProfile {
+  id           String         @id @default(uuid())
+  userId       String         @unique
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName String
+  businessType String
+  address      String
+  latitude     Float?
+  longitude    Float?
+  phone        String?
+  logoUrl      String?
+  status       MerchantStatus @default(PENDING)
+  totalOrders  Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("merchant_profiles")
+}
+
+model SosEscalation {
+  id                String   @id @default(uuid())
+  riderId           String
+  latitude          Float?
+  longitude         Float?
+  acknowledged      Boolean  @default(false)
+  acknowledgedBy    String?
+  acknowledgedAt    DateTime?
+  escalated         Boolean  @default(false)
+  escalatedAt       DateTime?
+  contactNotified   Boolean  @default(false)
+  resolved          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  @@map("sos_escalations")
+}
+
+model EtaSample {
+  id           String   @id @default(uuid())
+  distanceKm   Float
+  hourOfDay    Int
+  dayOfWeek    Int
+  actualMinutes Int
+  orderType    OrderType
+  createdAt    DateTime @default(now())
+
+  @@map("eta_samples")
 }
