@@ -108,6 +108,68 @@ export default function AnalyticsPage() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Demand Heatmap */}
+      <HeatmapSection />
+
+      {/* ETA Accuracy note */}
+      <div className="bg-card rounded-xl border p-6 shadow-sm space-y-2">
+        <h3 className="font-semibold">ETA Accuracy &amp; Confidence Bands</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Quick Rider GH provides <strong>ETA confidence bands</strong> (e.g. &quot;18–24 min&quot;) rather than a single point estimate.
+          The band width reflects real-time uncertainty: traffic density, rider distance to pickup, and historical delivery variance on that route.
+          A <strong>narrow band</strong> (±3 min) indicates high confidence; a <strong>wide band</strong> (±10 min or more) signals high variance — typically during peak hours or in high-congestion areas.
+          ETAs are recalculated every 60 seconds while an order is in transit and riders are tracked via GPS.
+          Displayed estimates target the <strong>P10–P90 range</strong> — 80% of deliveries complete within the band.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function HeatmapSection() {
+  const { data: heatmapData, isLoading } = useQuery<{ data: any[] }>({
+    queryKey: ['admin-heatmap'],
+    queryFn: () => api.get('/admin/heatmap'),
+  });
+
+  const spots = heatmapData?.data?.slice(0, 10) ?? [];
+
+  return (
+    <div className="bg-card rounded-xl border p-6 shadow-sm">
+      <h3 className="font-semibold mb-4">Top 10 Demand Hotspots <span className="text-muted-foreground font-normal text-sm">(Last 24h)</span></h3>
+      {isLoading ? (
+        <div className="space-y-2 animate-pulse">
+          {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-8 bg-muted rounded" />)}
+        </div>
+      ) : spots.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No heatmap data available yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[400px]">
+            <thead>
+              <tr className="text-xs text-muted-foreground border-b">
+                <th className="text-left py-2 font-medium pr-4">#</th>
+                <th className="text-left py-2 font-medium pr-4">Latitude</th>
+                <th className="text-left py-2 font-medium pr-4">Longitude</th>
+                <th className="text-right py-2 font-medium">Order Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              {spots.map((spot: any, idx: number) => (
+                <tr key={idx} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                  <td className="py-2.5 pr-4 text-muted-foreground font-mono text-xs">{idx + 1}</td>
+                  <td className="py-2.5 pr-4 font-mono text-xs">{typeof spot.lat === 'number' ? spot.lat.toFixed(5) : spot.lat}</td>
+                  <td className="py-2.5 pr-4 font-mono text-xs">{typeof spot.lng === 'number' ? spot.lng.toFixed(5) : spot.lng}</td>
+                  <td className="py-2.5 text-right">
+                    <span className="font-bold">{spot.count ?? spot.orderCount ?? '—'}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

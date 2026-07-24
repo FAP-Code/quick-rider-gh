@@ -14,6 +14,8 @@ import {
   LogOut,
   Bell,
   ExternalLink,
+  ShieldAlert,
+  Flag,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useRouter } from 'next/navigation';
@@ -26,6 +28,8 @@ const navItems = [
   { href: '/dashboard/analytics',    label: 'Analytics',    icon: BarChart3 },
   { href: '/dashboard/withdrawals',  label: 'Withdrawals',  icon: CreditCard },
   { href: '/dashboard/reports',      label: 'Reports',      icon: AlertTriangle },
+  { href: '/dashboard/fraud',        label: 'Fraud Flags',  icon: Flag },
+  { href: '/dashboard/sos',          label: 'SOS Alerts',   icon: ShieldAlert },
   { href: '/dashboard/settings',     label: 'Settings',     icon: Settings },
 ];
 

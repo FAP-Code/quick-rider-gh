@@ -1,9 +1,10 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Wallet, TrendingUp, ArrowUpRight, DollarSign, X } from 'lucide-react';
+import { Wallet, TrendingUp, ArrowUpRight, DollarSign, X, Fuel, Leaf, ExternalLink } from 'lucide-react';
 
 export default function RiderEarningsPage() {
   const qc = useQueryClient();
@@ -19,6 +20,16 @@ export default function RiderEarningsPage() {
     queryFn: () => api.get('/riders/me/earnings'),
   });
   const e = earningsData?.data ?? earningsData ?? {};
+
+  const { data: fuelData } = useQuery<{ data: any }>({
+    queryKey: ['rider-fuel'],
+    queryFn: () => api.get('/rider/fuel'),
+  });
+  const fd = fuelData?.data ?? fuelData ?? {};
+  const fuelCosts: number  = fd.monthlyTotal ?? 0;
+  const carbonSaved: number = fd.carbonSaved ?? (e.completedDeliveries ?? 0) * 0.12;
+  const grossEarnings: number = e.thisMonthEarnings ?? e.totalEarnings ?? 0;
+  const netEarnings = grossEarnings - fuelCosts;
 
   const withdrawMutation = useMutation({
     mutationFn: (body: any) => api.post('/riders/me/withdrawal', body),
@@ -66,6 +77,33 @@ export default function RiderEarningsPage() {
           </div>
           <p className="text-3xl font-bold">{formatCurrency(e.totalEarnings ?? 0)}</p>
           <p className="text-xs text-muted-foreground mt-1">{e.completedDeliveries ?? 0} deliveries</p>
+        </div>
+      </div>
+
+      {/* Net Earnings card */}
+      <div className="bg-card border rounded-2xl shadow-sm p-5 space-y-3">
+        <h3 className="font-semibold text-sm">Net Earnings This Month</h3>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-muted-foreground"><TrendingUp size={15} className="text-green-500" /> Gross Earnings</span>
+            <span className="font-semibold">{formatCurrency(grossEarnings)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-muted-foreground"><Fuel size={15} className="text-red-500" /> Fuel Costs</span>
+            <span className="font-semibold text-red-600">−{formatCurrency(fuelCosts)}</span>
+          </div>
+          <div className="border-t pt-2 flex items-center justify-between">
+            <span className="font-bold text-sm">Net Earnings</span>
+            <span className={`text-xl font-bold ${netEarnings >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatCurrency(netEarnings)}</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-xs text-green-700 flex items-center gap-1">
+            <Leaf size={12} /> You&apos;ve saved <strong>{carbonSaved.toFixed(1)} kg CO₂</strong> this month 🌱
+          </p>
+          <Link href="/rider/fuel" className="text-xs text-brand-green-600 font-semibold hover:underline flex items-center gap-1">
+            Log Fuel Expense <ExternalLink size={11} />
+          </Link>
         </div>
       </div>
 

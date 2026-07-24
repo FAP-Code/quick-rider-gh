@@ -1,7 +1,14 @@
 [build]
   base    = "packages/web"
   command = "npm install && npm run build"
-  publish = "packages/web/out"
+  publish = "out"
 
 [build.environment]
-  NEXT_PUBLIC_API_URL = "https://quick-rider-gh.onrender.com/api/v1"
+  NEXT_PUBLIC_API_URL = "https://quick-rider-gh-api.onrender.com/api/v1"
+  NODE_VERSION        = "20"
+
+# Client-side routing fallback for Next.js static export
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
